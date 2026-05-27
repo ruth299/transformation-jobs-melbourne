@@ -1,478 +1,716 @@
 /* ====================================================
-   TRANSFORMATION JOBS MELBOURNE - JAVASCRIPT
-   Handles API calls, filtering, and UI rendering
+   TRANSFORMATION JOBS MELBOURNE - STYLES
+   Professional modern design for recruiters & hiring managers
    ==================================================== */
-
-// ---- API CONFIGURATION ----
-// Adzuna API credentials for job search
-const API_CONFIG = {
-    appId: '45773940',
-    apiKey: '19373b4fdefafdc7dbe4a625f0910e2d',
-    baseUrl: 'https://api.adzuna.com/v1/api/jobs/au/search'
-};
-
-// ---- TARGET JOB KEYWORDS ----
-// These are the main transformation-related roles we're searching for
-const TARGET_KEYWORDS = [
-    'Transformation Lead',
-    'Business Transformation',
-    'Program Manager',
-    'Senior Business Analyst',
-    'Delivery Lead',
-    'PMO',
-    'Change Manager',
-    'Workday Transformation',
-    'Business Improvement',
-    'Operating Model'
-];
-
-// ---- STATE MANAGEMENT ----
-let allJobs = []; // Store all fetched jobs
-let filteredJobs = []; // Store filtered results
-let activeFilters = {
-    keyword: [],
-    arrangement: [],
-    employment: [],
-    search: ''
-};
-
-// ---- DOM ELEMENTS ----
-const searchInput = document.getElementById('searchInput');
-const filterChips = document.querySelectorAll('.filter-chip');
-const clearFiltersBtn = document.getElementById('clearFilters');
-const jobsContainer = document.getElementById('jobsContainer');
-const loadingState = document.getElementById('loadingState');
-const errorState = document.getElementById('errorState');
-const errorMessage = document.getElementById('errorMessage');
-const noResultsState = document.getElementById('noResultsState');
-const jobCount = document.getElementById('jobCount');
-const lastUpdated = document.getElementById('lastUpdated');
-const retryButton = document.getElementById('retryButton');
-const footerTime = document.getElementById('footerTime');
-
-// ---- INITIALIZATION ----
-document.addEventListener('DOMContentLoaded', function() {
-    // Fetch jobs when page loads
-    fetchJobs();
+ 
+/* ---- ROOT VARIABLES & THEMING ---- */
+:root {
+    /* Primary Colors - Professional blue palette */
+    --primary-color: #185FA5;
+    --primary-light: #378ADD;
+    --primary-lighter: #85B7EB;
+    --primary-lightest: #E6F1FB;
     
-    // Set up event listeners
-    setupEventListeners();
+    /* Accent Colors */
+    --accent-success: #3B6D11;
+    --accent-success-light: #97C459;
+    --accent-warning: #BA7517;
+    --accent-warning-light: #EF9F27;
+    --accent-danger: #A32D2D;
+    --accent-danger-light: #F09595;
     
-    // Update footer timestamp
-    updateTimestamp();
-});
-
-// ---- FETCH JOBS FROM ADZUNA API ----
-async function fetchJobs() {
-    showLoading();
+    /* Backgrounds & Text */
+    --bg-primary: #FFFFFF;
+    --bg-secondary: #F8F9FA;
+    --bg-tertiary: #F1F3F5;
+    --text-primary: #2C2C2A;
+    --text-secondary: #5F5E5A;
+    --text-tertiary: #888780;
+    --text-muted: #B4B2A9;
     
-    try {
-        // Search for transformation jobs - simpler query for faster API response
-        // Instead of complex OR query which is slow, we search for "transformation"
-        const params = new URLSearchParams({
-            app_id: API_CONFIG.appId,
-            app_key: API_CONFIG.apiKey,
-            what: 'transformation', // Simpler, faster search term
-            where: 'Melbourne', // Just Melbourne for faster results
-            results_per_page: 100, // Get more results at once
-            sort_by: 'date', // Sort by most recent
-            sort_direction: 'descending'
-        });
-        
-        const url = `${API_CONFIG.baseUrl}?${params.toString()}`;
-        
-        console.log('Fetching from:', url);
-        const startTime = Date.now();
-        
-        // Make the API request with 15 second timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
-        
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            },
-            signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        const responseTime = Date.now() - startTime;
-        console.log('Response status:', response.status, 'Time:', responseTime + 'ms');
-        
-        // Check if request was successful
-        if (!response.ok) {
-            // If API key is not set, show helpful error
-            if (API_CONFIG.apiKey === 'YOUR_API_KEY_HERE') {
-                throw new Error('Please add your Adzuna API key to the script.js file (API_CONFIG.apiKey)');
-            }
-            throw new Error(`API Error: ${response.status} ${response.statusText}`);
-        }
-        
-        // Parse the JSON response
-        const data = await response.json();
-        console.log('API Response:', data);
-        
-        // Check if we got any results
-        if (!data.results || data.results.length === 0) {
-            allJobs = [];
-            showNoResults();
-            return;
-        }
-        
-        // Store the jobs and apply initial filters
-        allJobs = data.results;
-        filterJobs();
-        
-        // Show success state
-        hideLoading();
-        renderJobs();
-        
-    } catch (error) {
-        // Show error message to user
-        console.error('Error fetching jobs:', error);
-        
-        // Better error messages
-        if (error.name === 'AbortError') {
-            showError('Request took too long. The Adzuna API server is slow right now. Please refresh and try again.');
-        } else if (error.message.includes('Failed to fetch')) {
-            showError('Network error. Please check your internet connection and try again.');
-        } else {
-            showError(error.message);
-        }
+    /* Borders */
+    --border-color: #D3D1C7;
+    --border-light: #E8E6DE;
+    
+    /* Spacing */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 12px;
+    --spacing-lg: 16px;
+    --spacing-xl: 24px;
+    --spacing-2xl: 32px;
+    
+    /* Border Radius */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    
+    /* Typography */
+    --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    --font-size-xs: 12px;
+    --font-size-sm: 13px;
+    --font-size-base: 14px;
+    --font-size-lg: 16px;
+    --font-size-xl: 18px;
+    --font-size-2xl: 24px;
+    --font-size-3xl: 32px;
+    
+    --line-height-tight: 1.4;
+    --line-height-normal: 1.6;
+    --line-height-relaxed: 1.8;
+}
+ 
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-primary: #1A1A1A;
+        --bg-secondary: #242424;
+        --bg-tertiary: #2D2D2D;
+        --text-primary: #F5F5F5;
+        --text-secondary: #D3D1C7;
+        --text-tertiary: #B4B2A9;
+        --text-muted: #888780;
+        --border-color: #3A3A3A;
+        --border-light: #2D2D2D;
     }
 }
-
-// ---- SET UP EVENT LISTENERS ----
-function setupEventListeners() {
-    // Search input - filter on every keystroke
-    searchInput.addEventListener('input', function(e) {
-        activeFilters.search = e.target.value.toLowerCase();
-        filterJobs();
-        renderJobs();
-    });
-    
-    // Filter chips - toggle filters when clicked
-    filterChips.forEach(chip => {
-        chip.addEventListener('click', function() {
-            const filterType = this.dataset.filterType;
-            const filterValue = this.dataset.filterValue;
-            
-            // Toggle the filter
-            toggleFilter(filterType, filterValue);
-        });
-    });
-    
-    // Clear all filters button
-    clearFiltersBtn.addEventListener('click', function() {
-        // Reset all filters
-        activeFilters = {
-            keyword: [],
-            arrangement: [],
-            employment: [],
-            search: ''
-        };
-        
-        // Reset search input
-        searchInput.value = '';
-        
-        // Deactivate all chips
-        filterChips.forEach(chip => {
-            chip.classList.remove('active');
-        });
-        
-        // Re-filter and render
-        filterJobs();
-        renderJobs();
-    });
-    
-    // Retry button
-    retryButton.addEventListener('click', function() {
-        fetchJobs();
-    });
+ 
+/* ---- GLOBAL STYLES ---- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
-
-// ---- TOGGLE FILTER ----
-function toggleFilter(filterType, filterValue) {
-    // Get the current filter array
-    const filterArray = activeFilters[filterType];
-    
-    // Check if value is already in the filter
-    const index = filterArray.indexOf(filterValue);
-    
-    if (index > -1) {
-        // Remove if already exists
-        filterArray.splice(index, 1);
-    } else {
-        // Add if doesn't exist
-        filterArray.push(filterValue);
+ 
+html {
+    scroll-behavior: smooth;
+}
+ 
+body {
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-normal);
+    color: var(--text-primary);
+    background-color: var(--bg-secondary);
+    transition: background-color 0.3s ease;
+}
+ 
+/* ---- HEADER ---- */
+.header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    color: white;
+    padding: var(--spacing-2xl) var(--spacing-lg);
+    box-shadow: var(--shadow-md);
+}
+ 
+.header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+ 
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+ 
+.icon-large {
+    font-size: 40px;
+    opacity: 0.95;
+}
+ 
+.logo-title {
+    font-size: var(--font-size-3xl);
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+ 
+.logo-subtitle {
+    font-size: var(--font-size-sm);
+    opacity: 0.9;
+    margin: 2px 0 0 0;
+}
+ 
+.header-description {
+    font-size: var(--font-size-base);
+    opacity: 0.95;
+    margin: 0;
+}
+ 
+/* ---- CONTAINER ---- */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-2xl) var(--spacing-lg);
+}
+ 
+/* ---- FILTERS SECTION ---- */
+.filters-section {
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-light);
+}
+ 
+.search-box {
+    position: relative;
+    margin-bottom: var(--spacing-xl);
+}
+ 
+.search-icon {
+    position: absolute;
+    left: var(--spacing-lg);
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-tertiary);
+    font-size: var(--font-size-lg);
+    pointer-events: none;
+}
+ 
+.search-input {
+    width: 100%;
+    padding: var(--spacing-md) var(--spacing-md) var(--spacing-md) 40px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+    transition: all 0.2s ease;
+}
+ 
+.search-input:hover {
+    border-color: var(--primary-lighter);
+}
+ 
+.search-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--primary-lightest);
+}
+ 
+/* Filter groups */
+.filters-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+ 
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+ 
+.filter-label {
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0;
+}
+ 
+.filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+ 
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+ 
+.filter-chip:hover {
+    border-color: var(--primary-color);
+    background-color: var(--primary-lightest);
+}
+ 
+.filter-chip.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+ 
+.filter-chip.active .chip-icon {
+    display: inline;
+}
+ 
+.chip-icon {
+    display: none;
+    font-size: 14px;
+}
+ 
+.btn-clear-filters {
+    align-self: flex-start;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    transition: all 0.2s ease;
+}
+ 
+.btn-clear-filters:hover {
+    color: var(--accent-danger);
+    border-color: var(--accent-danger-light);
+    background-color: rgba(163, 45, 45, 0.05);
+}
+ 
+/* ---- RESULTS HEADER ---- */
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xl);
+    flex-wrap: wrap;
+    gap: var(--spacing-lg);
+}
+ 
+.results-info {
+    display: flex;
+    gap: var(--spacing-lg);
+    align-items: center;
+}
+ 
+.job-count {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: var(--font-size-lg);
+}
+ 
+.last-updated {
+    font-size: var(--font-size-sm);
+    color: var(--text-tertiary);
+}
+ 
+/* ---- LOADING STATE ---- */
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-2xl);
+    gap: var(--spacing-lg);
+}
+ 
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+ 
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+ 
+.loading-state p {
+    color: var(--text-secondary);
+    font-size: var(--font-size-base);
+}
+ 
+/* ---- ERROR STATE ---- */
+.error-state {
+    background-color: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-light);
+    padding: var(--spacing-2xl);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-lg);
+}
+ 
+.error-icon {
+    font-size: 48px;
+    color: var(--accent-danger);
+}
+ 
+.error-state h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: var(--font-size-xl);
+}
+ 
+.error-state p {
+    color: var(--text-secondary);
+    margin: 0;
+    max-width: 400px;
+}
+ 
+/* ---- BUTTONS ---- */
+.btn-retry,
+.btn-apply {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+ 
+.btn-retry {
+    background-color: var(--primary-color);
+    color: white;
+}
+ 
+.btn-retry:hover {
+    background-color: var(--primary-light);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+ 
+.btn-apply {
+    background-color: var(--accent-success);
+    color: white;
+}
+ 
+.btn-apply:hover {
+    background-color: var(--accent-success-light);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+ 
+/* ---- JOBS GRID ---- */
+.jobs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--spacing-lg);
+}
+ 
+/* Job card styling */
+.job-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+ 
+.job-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-4px);
+    border-color: var(--primary-lighter);
+}
+ 
+.job-header {
+    margin-bottom: var(--spacing-lg);
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: var(--spacing-lg);
+}
+ 
+.job-title {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-sm) 0;
+    line-height: var(--line-height-tight);
+}
+ 
+.job-title a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+ 
+.job-title a:hover {
+    color: var(--primary-light);
+    text-decoration: underline;
+}
+ 
+.job-company {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: var(--font-size-base);
+    margin: 0;
+}
+ 
+/* Job meta information */
+.job-meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+ 
+.job-meta-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+}
+ 
+.job-meta-item i {
+    color: var(--text-tertiary);
+    font-size: var(--font-size-base);
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+ 
+.job-meta-text {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+ 
+.job-meta-label {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+ 
+.salary {
+    background-color: var(--primary-lightest);
+    color: var(--primary-color);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    display: inline-block;
+}
+ 
+.days-posted {
+    background-color: var(--bg-tertiary);
+    color: var(--text-tertiary);
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-xs);
+}
+ 
+/* Job summary */
+.job-summary {
+    flex-grow: 1;
+    margin-bottom: var(--spacing-lg);
+}
+ 
+.summary-text {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-relaxed);
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+ 
+/* Job tags/badges */
+.job-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-lg);
+}
+ 
+.tag {
+    display: inline-block;
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 500;
+}
+ 
+.tag.remote {
+    background-color: rgba(59, 109, 17, 0.1);
+    color: var(--accent-success);
+}
+ 
+.tag.hybrid {
+    background-color: rgba(186, 117, 23, 0.1);
+    color: var(--accent-warning);
+}
+ 
+.tag.onsite {
+    background-color: rgba(56, 138, 221, 0.1);
+    color: var(--primary-light);
+}
+ 
+/* Job footer with source and button */
+.job-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--border-light);
+}
+ 
+.job-source {
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+}
+ 
+.job-source a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+ 
+.job-source a:hover {
+    text-decoration: underline;
+}
+ 
+/* ---- NO RESULTS STATE ---- */
+.no-results-state {
+    background-color: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-light);
+    padding: var(--spacing-2xl);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-lg);
+}
+ 
+.no-results-icon {
+    font-size: 48px;
+    color: var(--text-tertiary);
+}
+ 
+.no-results-state h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: var(--font-size-xl);
+}
+ 
+.no-results-state p {
+    color: var(--text-secondary);
+    margin: 0;
+    max-width: 400px;
+}
+ 
+/* ---- FOOTER ---- */
+.footer {
+    background-color: var(--bg-tertiary);
+    border-top: 1px solid var(--border-light);
+    padding: var(--spacing-2xl) var(--spacing-lg);
+    margin-top: var(--spacing-2xl);
+}
+ 
+.footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-relaxed);
+}
+ 
+.footer-content p {
+    margin: var(--spacing-sm) 0;
+}
+ 
+/* ---- UTILITY CLASSES ---- */
+.hidden {
+    display: none !important;
+}
+ 
+/* ---- RESPONSIVE DESIGN ---- */
+@media (max-width: 768px) {
+    .header {
+        padding: var(--spacing-xl) var(--spacing-lg);
     }
     
-    // Update the chip UI
-    updateChipUI(filterType, filterValue);
-    
-    // Re-filter and render
-    filterJobs();
-    renderJobs();
-}
-
-// ---- UPDATE CHIP UI ----
-function updateChipUI(filterType, filterValue) {
-    // Find the chip and toggle active class
-    filterChips.forEach(chip => {
-        if (chip.dataset.filterType === filterType && chip.dataset.filterValue === filterValue) {
-            chip.classList.toggle('active');
-        }
-    });
-}
-
-// ---- FILTER JOBS ----
-function filterJobs() {
-    filteredJobs = allJobs.filter(job => {
-        // Search filter - match against title and company
-        if (activeFilters.search) {
-            const searchTerm = activeFilters.search;
-            const titleMatch = (job.title || '').toLowerCase().includes(searchTerm);
-            const companyMatch = (job.company.display_name || '').toLowerCase().includes(searchTerm);
-            
-            if (!titleMatch && !companyMatch) {
-                return false;
-            }
-        }
-        
-        // Keyword filter - must match at least one selected keyword
-        if (activeFilters.keyword.length > 0) {
-            const jobTitle = (job.title || '').toLowerCase();
-            const jobDesc = (job.description || '').toLowerCase();
-            const jobText = jobTitle + ' ' + jobDesc;
-            
-            const keywordMatch = activeFilters.keyword.some(keyword => 
-                jobText.includes(keyword.toLowerCase())
-            );
-            
-            if (!keywordMatch) {
-                return false;
-            }
-        }
-        
-        // Work arrangement filter
-        if (activeFilters.arrangement.length > 0) {
-            const jobDesc = (job.description || '').toLowerCase();
-            const arrangementMatch = activeFilters.arrangement.some(arrangement => 
-                jobDesc.includes(arrangement.toLowerCase())
-            );
-            
-            if (!arrangementMatch) {
-                return false;
-            }
-        }
-        
-        // Employment type filter
-        if (activeFilters.employment.length > 0) {
-            const jobDesc = (job.description || '').toLowerCase();
-            const employmentMatch = activeFilters.employment.some(employment => 
-                jobDesc.includes(employment.toLowerCase())
-            );
-            
-            if (!employmentMatch) {
-                return false;
-            }
-        }
-        
-        // If all filters passed, include the job
-        return true;
-    });
-}
-
-// ---- RENDER JOBS ----
-function renderJobs() {
-    // Clear the container
-    jobsContainer.innerHTML = '';
-    
-    // Show appropriate state
-    if (filteredJobs.length === 0) {
-        hideLoading();
-        showNoResults();
-        jobCount.textContent = 'No jobs found';
-        return;
+    .logo-section {
+        flex-direction: column;
+        gap: var(--spacing-md);
+        align-items: flex-start;
     }
     
-    // Hide error and no results states
-    hideLoading();
-    errorState.classList.add('hidden');
-    noResultsState.classList.add('hidden');
-    
-    // Update job count
-    jobCount.textContent = `${filteredJobs.length} job${filteredJobs.length !== 1 ? 's' : ''} found`;
-    
-    // Create and append job cards
-    filteredJobs.forEach(job => {
-        const jobCard = createJobCard(job);
-        jobsContainer.appendChild(jobCard);
-    });
-}
-
-// ---- CREATE JOB CARD ----
-function createJobCard(job) {
-    // Create the card element
-    const card = document.createElement('div');
-    card.className = 'job-card';
-    
-    // Calculate days since posted
-    const postedDate = new Date(job.created);
-    const today = new Date();
-    const daysSincePosted = Math.floor((today - postedDate) / (1000 * 60 * 60 * 24));
-    const daysText = daysSincePosted === 0 ? 'Today' : daysSincePosted === 1 ? 'Yesterday' : `${daysSincePosted} days ago`;
-    
-    // Extract work arrangement and employment type tags
-    const jobDesc = (job.description || '').toLowerCase();
-    const tags = [];
-    
-    if (jobDesc.includes('remote')) tags.push('remote');
-    if (jobDesc.includes('hybrid')) tags.push('hybrid');
-    if (jobDesc.includes('onsite') || jobDesc.includes('on-site')) tags.push('onsite');
-    
-    if (jobDesc.includes('full-time') || jobDesc.includes('full time')) tags.push('full-time');
-    if (jobDesc.includes('contract')) tags.push('contract');
-    
-    // Build the card HTML
-    card.innerHTML = `
-        <div class="job-header">
-            <h3 class="job-title">
-                <a href="${job.redirect_url}" target="_blank" rel="noopener noreferrer">
-                    ${escapeHtml(job.title)}
-                </a>
-            </h3>
-            <p class="job-company">${escapeHtml(job.company.display_name)}</p>
-        </div>
-        
-        <div class="job-meta">
-            <div class="job-meta-item">
-                <i class="ti ti-map-pin"></i>
-                <span class="job-meta-text">${escapeHtml(job.location.display_name)}</span>
-            </div>
-            
-            ${job.salary_min && job.salary_max ? `
-                <div class="job-meta-item">
-                    <i class="ti ti-currency-dollar"></i>
-                    <span class="salary">
-                        $${formatSalary(job.salary_min)} - $${formatSalary(job.salary_max)} AUD
-                    </span>
-                </div>
-            ` : ''}
-            
-            <div class="job-meta-item">
-                <i class="ti ti-calendar"></i>
-                <span class="days-posted">${daysText}</span>
-            </div>
-        </div>
-        
-        ${tags.length > 0 ? `
-            <div class="job-tags">
-                ${tags.map(tag => `<span class="tag ${tag}">${capitalizeFirst(tag)}</span>`).join('')}
-            </div>
-        ` : ''}
-        
-        ${job.description ? `
-            <div class="job-summary">
-                <p class="summary-text">${escapeHtml(job.description.substring(0, 200))}...</p>
-            </div>
-        ` : ''}
-        
-        <div class="job-footer">
-            <span class="job-source">
-                Via <a href="${job.redirect_url}" target="_blank" rel="noopener noreferrer">Adzuna</a>
-            </span>
-            <button class="btn-apply" onclick="window.open('${job.redirect_url}', '_blank')">
-                <i class="ti ti-arrow-up-right"></i>
-                View Job
-            </button>
-        </div>
-    `;
-    
-    return card;
-}
-
-// ---- UTILITY FUNCTIONS ----
-
-// Format salary to readable format
-function formatSalary(salary) {
-    if (salary >= 1000000) {
-        return '$' + (salary / 1000000).toFixed(1) + 'M';
-    } else if (salary >= 1000) {
-        return '$' + (salary / 1000).toFixed(0) + 'K';
+    .logo-title {
+        font-size: 24px;
     }
-    return '$' + salary;
+    
+    .container {
+        padding: var(--spacing-lg);
+    }
+    
+    .filters-section {
+        padding: var(--spacing-lg);
+    }
+    
+    .filter-chips {
+        gap: var(--spacing-sm);
+    }
+    
+    .filter-chip {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+    
+    .results-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .jobs-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .job-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-md);
+    }
+    
+    .btn-apply {
+        width: 100%;
+        justify-content: center;
+    }
 }
-
-// Escape HTML special characters to prevent XSS
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+ 
+@media (max-width: 480px) {
+    .header-description {
+        font-size: var(--font-size-sm);
+    }
+    
+    .filter-chips {
+        flex-direction: column;
+    }
+    
+    .filter-chip {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    
+    .search-input {
+        padding-left: 36px;
+    }
+    
+    .search-icon {
+        left: 10px;
+    }
 }
-
-// Capitalize first letter of string
-function capitalizeFirst(str) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-// Update timestamp in footer
-function updateTimestamp() {
-    const now = new Date();
-    const timeString = now.toLocaleTimeString('en-AU', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    });
-    const dateString = now.toLocaleDateString('en-AU');
-    footerTime.textContent = `${dateString} at ${timeString}`;
-}
-
-// ---- STATE MANAGEMENT FUNCTIONS ----
-
-// Show loading state
-function showLoading() {
-    loadingState.classList.remove('hidden');
-    errorState.classList.add('hidden');
-    noResultsState.classList.add('hidden');
-    jobsContainer.innerHTML = '';
-}
-
-// Hide loading state
-function hideLoading() {
-    loadingState.classList.add('hidden');
-}
-
-// Show error state
-function showError(message) {
-    hideLoading();
-    errorState.classList.remove('hidden');
-    errorMessage.textContent = message;
-    jobsContainer.innerHTML = '';
-}
-
-// Show no results state
-function showNoResults() {
-    errorState.classList.add('hidden');
-    noResultsState.classList.remove('hidden');
-}
-
-// ---- ACCESSIBILITY ----
-// Add ARIA labels and roles for better accessibility
-document.addEventListener('DOMContentLoaded', function() {
-    // Ensure filter buttons are keyboard accessible
-    filterChips.forEach(chip => {
-        chip.setAttribute('role', 'button');
-        chip.setAttribute('tabindex', '0');
-        
-        // Add keyboard support for Enter and Space
-        chip.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                this.click();
-            }
-        });
-    });
-});
