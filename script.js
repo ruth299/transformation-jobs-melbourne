@@ -157,16 +157,16 @@ function renderJobs(jobs) {
             </p>
 
            <div class="job-footer">
+           <span>
+              Source: ${job.company?.display_name || 'Adzuna'}
+           </span>
 
-    <div class="job-source">
-        <span>
-            Source:
-            ${
-                job.company?.display_name
-                || 'Adzuna'
-            }
-        </span>
-    </div>
+           <a href="${job.redirect_url}" target="_blank">
+            <button class="apply-btn">
+              View Job
+            </button>
+           </a>
+        </div>
 
     <a href="${job.redirect_url}"
        target="_blank">
