@@ -1,21 +1,19 @@
-// TRANSFORMATION JOBS MELBOURNE DASHBOARD
+// TRANSFORMATION JOBS MELBOURNE
 
-console.log('Dashboard loaded');
+console.log("App Loaded");
 
 // API CONFIG
 const APP_ID = '45773940';
 const API_KEY = '19373b4fdefafdc7dbe4a625f0910e2d';
 
+// SIMPLE SEARCH (BROADER RESULTS)
 const API_URL =
-`https://corsproxy.io/?https://api.adzuna.com/v1/api/jobs/au/search/1?app_id=${APP_ID}&app_key=${API_KEY}&results_per_page=50&what=ERP OR Transformation OR "Program Manager" OR "Senior Business Analyst" OR "Delivery Lead" OR PMO OR Workday OR SAP OR Oracle OR "Technology Transformation" OR "Project Manager" OR "Business Transformation"&where=Melbourne&content-type=application/json`;
+`https://corsproxy.io/?https://api.adzuna.com/v1/api/jobs/au/search/1?app_id=${APP_ID}&app_key=${API_KEY}&results_per_page=100&what=technology&where=Melbourne&content-type=application/json`;
 
-
-// DATA
 let allJobs = [];
 let filteredJobs = [];
 
-
-// DOM ELEMENTS
+// DOM
 const jobsContainer =
     document.getElementById(
         'jobsContainer'
@@ -88,19 +86,14 @@ async function fetchJobs() {
         <div style="
             text-align:center;
             padding:50px;
-            color:#38bdf8;
         ">
             <h3>
-                Loading Melbourne jobs...
+                Loading jobs...
             </h3>
         </div>
     `;
 
     try {
-
-        console.log(
-            'Fetching jobs'
-        );
 
         const response =
             await fetch(API_URL);
@@ -115,11 +108,6 @@ async function fetchJobs() {
 
         const data =
             await response.json();
-
-        console.log(
-            'Jobs found:',
-            data.results?.length
-        );
 
         allJobs =
             data.results || [];
@@ -141,29 +129,9 @@ async function fetchJobs() {
             <div style="
                 text-align:center;
                 padding:50px;
-                color:#ef4444;
+                color:red;
             ">
-                <h3>
-                    Unable to load jobs
-                </h3>
-
-                <p>
-                    ${error.message}
-                </p>
-
-                <button
-                    onclick="fetchJobs()"
-                    style="
-                        background:#38bdf8;
-                        border:none;
-                        padding:12px 20px;
-                        border-radius:10px;
-                        cursor:pointer;
-                        margin-top:12px;
-                    "
-                >
-                    Retry
-                </button>
+                Unable to load jobs
             </div>
         `;
     }
@@ -175,8 +143,7 @@ function applyFilters() {
 
     const searchTerm =
         searchInput?.value
-            .toLowerCase()
-            || '';
+        ?.toLowerCase() || '';
 
     const activeFilters =
         Array.from(
@@ -185,23 +152,26 @@ function applyFilters() {
             )
         ).map(btn =>
             btn.dataset.filter
+            .toLowerCase()
         );
 
     filteredJobs =
         allJobs.filter(job => {
 
             const text = `
-                ${job.title}
-                ${job.description}
-                ${job.company?.display_name}
+                ${job.title || ''}
+                ${job.description || ''}
+                ${job.company?.display_name || ''}
             `.toLowerCase();
 
+            // SEARCH
             const matchesSearch =
                 !searchTerm ||
                 text.includes(
                     searchTerm
                 );
 
+            // BUTTON FILTERS
             const matchesFilter =
                 activeFilters.length === 0 ||
 
@@ -218,15 +188,13 @@ function applyFilters() {
             );
         });
 
-    renderJobs(
-        filteredJobs
-    );
+    renderJobs(filteredJobs);
 
     updateDashboardStats();
 }
 
 
-// DASHBOARD STATS
+// DASHBOARD
 function updateDashboardStats() {
 
     // TOTAL JOBS
@@ -350,8 +318,7 @@ function renderJobs(jobs) {
             ? 'Today'
             : diffDays === 1
             ? '1 day ago'
-            : `${diffDays}
-               days ago`;
+            : `${diffDays} days ago`;
 
         const salary =
             job.salary_min &&
@@ -376,78 +343,52 @@ function renderJobs(jobs) {
             'job-card';
 
         card.innerHTML = `
-            <div class="
-                job-card-header
-            ">
+            <div class="job-card-header">
 
                 <div>
-
-                    <h3 class="
-                        job-title
-                    ">
+                    <h3 class="job-title">
                         ${job.title}
                     </h3>
 
-                    <p class="
-                        job-company
-                    ">
-                        ${job.company
-                        ?.display_name
-                        || 'Company'}
+                    <p class="job-company">
+                        ${job.company?.display_name || 'Company'}
                     </p>
-
                 </div>
 
-                <div class="
-                    job-salary
-                ">
+                <div class="job-salary">
                     ${salary}
                 </div>
 
             </div>
 
-            <div class="
-                job-info
-            ">
-
+            <div class="job-info">
                 <span>
                     📍
-                    ${job.location
-                    ?.display_name
-                    || 'Melbourne'}
+                    ${job.location?.display_name || 'Melbourne'}
                 </span>
 
                 <span>
                     🕒
                     ${postedText}
                 </span>
-
             </div>
 
-            <p class="
-                job-description
-            ">
+            <p class="job-description">
                 ${
                     job.description
-                    ? job.description
-                    .substring(
+                    ? job.description.substring(
                         0,
-                        220
-                    )
-                    + '...'
+                        200
+                    ) + '...'
                     : 'No description'
                 }
             </p>
 
-            <div class="
-                job-footer
-            ">
+            <div class="job-footer">
 
                 <span>
                     Source:
-                    ${job.company
-                    ?.display_name
-                    || 'Adzuna'}
+                    ${job.company?.display_name || 'Adzuna'}
                 </span>
 
                 <a
@@ -456,9 +397,7 @@ function renderJobs(jobs) {
                     }"
                     target="_blank"
                 >
-                    <button class="
-                        apply-btn
-                    ">
+                    <button class="apply-btn">
                         View Job
                     </button>
                 </a>
