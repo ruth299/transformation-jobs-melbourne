@@ -1,163 +1,174 @@
-// TRANSFORMATION JOBS MELBOURNE - FINAL VERSION
-console.log('Script loaded!');
+// TRANSFORMATION JOBS MELBOURNE - LIVE VERSION
 
-const API_CONFIG = {
-    appId: '45773940',
-    apiKey: '19373b4fdefafdc7dbe4a625f0910e2d',
-    baseUrl: 'https://api.adzuna.com/v1/api/jobs/au/search'
-};
+console.log('Script loaded');
+
+const APP_ID = '45773940';
+const API_KEY = '19373b4fdefafdc7dbe4a625f0910e2d';
+
+// IMPORTANT: page number "1" added after /search/
+const API_URL =
+`https://corsproxy.io/?https://api.adzuna.com/v1/api/jobs/au/search/1?app_id=${APP_ID}&app_key=${API_KEY}&results_per_page=50&what=transformation OR "program manager" OR "business analyst" OR "delivery lead" OR PMO OR "change manager" OR Workday&where=Melbourne&content-type=application/json`;
 
 let allJobs = [];
 let filteredJobs = [];
-let activeFilters = { keyword: [], arrangement: [], employment: [], search: '' };
 
-// DOM
 const jobsContainer = document.getElementById('jobsContainer');
-const loadingState = document.getElementById('loadingState');
-const errorState = document.getElementById('errorState');
-const errorMessage = document.getElementById('errorMessage');
 const jobCount = document.getElementById('jobCount');
 const searchInput = document.getElementById('searchInput');
-const filterChips = document.querySelectorAll('.filter-chip');
-const clearFiltersBtn = document.getElementById('clearFilters');
-const retryButton = document.getElementById('retryButton');
 
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Page loaded - fetching jobs');
+document.addEventListener('DOMContentLoaded', () => {
     fetchJobs();
-    setupListeners();
+
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+
+            filteredJobs = allJobs.filter(job =>
+                job.title?.toLowerCase().includes(searchTerm) ||
+                job.company?.display_name?.toLowerCase().includes(searchTerm) ||
+                job.description?.toLowerCase().includes(searchTerm)
+            );
+
+            renderJobs(filteredJobs);
+        });
+    }
 });
 
 async function fetchJobs() {
-    console.log('FETCH START');
-    loadingState.classList.remove('hidden');
-    errorState.classList.add('hidden');
-    jobsContainer.innerHTML = '';
+    jobsContainer.innerHTML = `
+        <div style="text-align:center;padding:50px;">
+            <h3>Loading Melbourne transformation jobs...</h3>
+        </div>
+    `;
 
     try {
-        // Simple query - just search for "transformation"
-        const url = `https://api.adzuna.com/v1/api/jobs/au/search?app_id=45773940&app_key=19373b4fdefafdc7dbe4a625f0910e2d&what=transformation&where=Melbourne&results_per_page=100`;
-        
-        console.log('Fetching from Adzuna API...');
-        
-        const response = await fetch(url);
-        console.log('Response status:', response.status);
+        console.log('Fetching jobs...');
+
+        const response = await fetch(API_URL);
 
         if (!response.ok) {
-            throw new Error(`API Error ${response.status}`);
+            throw new Error(`API failed: ${response.status}`);
         }
 
         const data = await response.json();
-        console.log('Jobs found:', data.results?.length || 0);
 
-        if (!data.results || data.results.length === 0) {
-            loadingState.classList.add('hidden');
-            jobCount.textContent = 'No jobs found';
-            return;
-        }
+        console.log('Jobs returned:', data.results?.length);
 
-        allJobs = data.results;
-        filterJobs();
-        loadingState.classList.add('hidden');
-        renderJobs();
-        console.log('SUCCESS - Jobs displayed');
+        allJobs = data.results || [];
+        filteredJobs = [...allJobs];
+
+        renderJobs(filteredJobs);
 
     } catch (error) {
-        console.error('ERROR:', error.message);
-        loadingState.classList.add('hidden');
-        errorMessage.textContent = 'Error: ' + error.message;
-        errorState.classList.remove('hidden');
+        console.error(error);
+
+        jobsContainer.innerHTML = `
+            <div style="text-align:center;padding:50px;color:#ffd700;">
+                <h3>Unable to fetch jobs</h3>
+                <p>${error.message}</p>
+                <button onclick="fetchJobs()" 
+                    style="
+                        background:#ffd700;
+                        color:black;
+                        border:none;
+                        padding:12px 20px;
+                        border-radius:8px;
+                        cursor:pointer;
+                        margin-top:10px;
+                    ">
+                    Retry
+                </button>
+            </div>
+        `;
     }
 }
 
-function setupListeners() {
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            activeFilters.search = e.target.value.toLowerCase();
-            filterJobs();
-            renderJobs();
-        });
-    }
-
-    filterChips.forEach(chip => {
-        chip.addEventListener('click', function() {
-            const type = this.dataset.filterType;
-            const value = this.dataset.filterValue;
-            const arr = activeFilters[type];
-            const idx = arr.indexOf(value);
-            if (idx > -1) arr.splice(idx, 1);
-            else arr.push(value);
-            this.classList.toggle('active');
-            filterJobs();
-            renderJobs();
-        });
-    });
-
-    if (clearFiltersBtn) {
-        clearFiltersBtn.addEventListener('click', () => {
-            activeFilters = { keyword: [], arrangement: [], employment: [], search: '' };
-            if (searchInput) searchInput.value = '';
-            filterChips.forEach(c => c.classList.remove('active'));
-            filterJobs();
-            renderJobs();
-        });
-    }
-
-    if (retryButton) {
-        retryButton.addEventListener('click', fetchJobs);
-    }
-}
-
-function filterJobs() {
-    filteredJobs = allJobs.filter(job => {
-        if (activeFilters.search) {
-            const s = activeFilters.search;
-            if (!(job.title.toLowerCase().includes(s) || job.company.display_name.toLowerCase().includes(s))) {
-                return false;
-            }
-        }
-        return true;
-    });
-}
-
-function renderJobs() {
+function renderJobs(jobs) {
     jobsContainer.innerHTML = '';
 
-    if (filteredJobs.length === 0) {
-        jobCount.textContent = 'No jobs found';
+    if (!jobs.length) {
+        jobsContainer.innerHTML = `
+            <div style="text-align:center;padding:50px;">
+                No jobs found.
+            </div>
+        `;
+
+        if (jobCount) {
+            jobCount.textContent = '0';
+        }
+
         return;
     }
 
-    jobCount.textContent = `${filteredJobs.length} jobs found`;
+    if (jobCount) {
+        jobCount.textContent = jobs.length;
+    }
 
-    filteredJobs.forEach(job => {
-        const days = Math.floor((new Date() - new Date(job.created)) / (1000 * 60 * 60 * 24));
-        const daysText = days === 0 ? 'Today' : days === 1 ? 'Yesterday' : `${days} days ago`;
+    jobs.forEach(job => {
+
+        const postedDate = new Date(job.created);
+        const today = new Date();
+
+        const diffTime = today - postedDate;
+        const diffDays = Math.floor(
+            diffTime / (1000 * 60 * 60 * 24)
+        );
+
+        const postedText =
+            diffDays === 0
+                ? 'Today'
+                : diffDays === 1
+                ? '1 day ago'
+                : `${diffDays} days ago`;
+
+        const salary =
+            job.salary_min && job.salary_max
+                ? `$${Math.round(job.salary_min / 1000)}K - $${Math.round(job.salary_max / 1000)}K`
+                : 'Salary not listed';
 
         const card = document.createElement('div');
         card.className = 'job-card';
+
         card.innerHTML = `
-            <div class="job-header">
-                <h3 class="job-title"><a href="${job.redirect_url}" target="_blank">${job.title}</a></h3>
-                <p class="job-company">${job.company.display_name}</p>
-            </div>
-            <div class="job-meta">
-                <div class="job-meta-item">
-                    <i class="ti ti-map-pin"></i>
-                    <span class="job-meta-text">${job.location.display_name}</span>
+            <div class="job-card-header">
+                <div>
+                    <h3 class="job-title">
+                        ${job.title}
+                    </h3>
+                    <p class="job-company">
+                        ${job.company?.display_name || 'Company'}
+                    </p>
                 </div>
-                ${job.salary_min ? `<div class="job-meta-item"><i class="ti ti-currency-dollar"></i><span class="salary">$${job.salary_min.toLocaleString()} - $${job.salary_max.toLocaleString()} AUD</span></div>` : ''}
-                <div class="job-meta-item">
-                    <i class="ti ti-calendar"></i>
-                    <span class="days-posted">${daysText}</span>
+
+                <div class="job-salary">
+                    ${salary}
                 </div>
             </div>
-            ${job.description ? `<div class="job-summary"><p class="summary-text">${job.description.substring(0, 200)}...</p></div>` : ''}
+
+            <div class="job-info">
+                <span>📍 ${job.location?.display_name || 'Melbourne'}</span>
+                <span>🕒 ${postedText}</span>
+            </div>
+
+            <p class="job-description">
+                ${job.description
+                    ? job.description.substring(0, 220) + '...'
+                    : 'No description available'}
+            </p>
+
             <div class="job-footer">
-                <span class="job-source">Via Adzuna</span>
-                <button class="btn-apply" onclick="window.open('${job.redirect_url}', '_blank')"><i class="ti ti-arrow-up-right"></i> View Job</button>
+                <span>Via Adzuna</span>
+
+                <a href="${job.redirect_url}" 
+                   target="_blank">
+
+                    <button class="apply-btn">
+                        Apply
+                    </button>
+                </a>
             </div>
         `;
+
         jobsContainer.appendChild(card);
     });
 }
