@@ -156,22 +156,28 @@ function renderJobs(jobs) {
                     : 'No description available'}
             </p>
 
-            <div class="job-footer">
-               <span>
-    Source: ${
-        job.company?.display_name
-        || 'Adzuna'
-    }
-</span>
+           <div class="job-footer">
 
-                <a href="${job.redirect_url}" 
-                   target="_blank">
+    <div class="job-source">
+        <span>
+            Source:
+            ${
+                job.company?.display_name
+                || 'Adzuna'
+            }
+        </span>
+    </div>
 
-                    <button class="apply-btn">
-                        Apply
-                    </button>
-                </a>
-            </div>
+    <a href="${job.redirect_url}"
+       target="_blank">
+
+        <button class="apply-btn">
+            View Job →
+        </button>
+
+    </a>
+
+</div>
         `;
 
         jobsContainer.appendChild(card);
