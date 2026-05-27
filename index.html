@@ -1,180 +1,184 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Find transformation and business improvement jobs in Melbourne">
-    <title>Transformation Jobs Melbourne</title>
-    
-    <!-- Tabler Icons for UI elements -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons@latest/tabler-icons.min.css">
-    
-    <!-- Our custom styles -->
-    <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    />
+
+    <title>
+        Transformation Jobs Melbourne
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="styles.css"
+    />
 </head>
+
 <body>
-    <!-- Header section with branding -->
-    <header class="header">
-        <div class="header-content">
-            <div class="logo-section">
-                <i class="ti ti-briefcase icon-large"></i>
-                <div>
-                    <h1 class="logo-title">Transformation Jobs</h1>
-                    <p class="logo-subtitle">Melbourne & Victoria</p>
-                </div>
-            </div>
-            <p class="header-description">
-                Discover leadership and transformation opportunities across Melbourne
-            </p>
-        </div>
-    </header>
 
-    <!-- Main container -->
-    <main class="container">
-        
-        <!-- Search and filter section -->
+    <div class="container">
+
+        <!-- HEADER -->
+
+        <header class="header">
+
+            <div class="live-badge">
+                ● LIVE JOBS
+            </div>
+
+            <h1 class="title">
+                Transformation Jobs Melbourne
+            </h1>
+
+            <p class="subtitle">
+                ERP, Delivery, Program,
+                Business Analysis &
+                Technology Transformation
+                roles in Melbourne
+            </p>
+
+        </header>
+
+
+        <!-- DASHBOARD STATS -->
+
+        <section class="stats-section">
+
+            <div class="stat-card">
+                <h2 id="jobCount">
+                    0
+                </h2>
+                <p>Total Jobs</p>
+            </div>
+
+            <div class="stat-card">
+                <h2 id="newJobsCount">
+                    0
+                </h2>
+                <p>New Today</p>
+            </div>
+
+            <div class="stat-card">
+                <h2 id="avgSalary">
+                    —
+                </h2>
+                <p>Avg Salary</p>
+            </div>
+
+        </section>
+
+
+        <!-- SEARCH -->
+
+        <section class="search-section">
+
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="Search jobs, company, technology..."
+                class="search-input"
+            />
+
+        </section>
+
+
+        <!-- FILTERS -->
+
         <section class="filters-section">
-            <div class="search-box">
-                <i class="ti ti-search search-icon"></i>
-                <input 
-                    type="text" 
-                    id="searchInput" 
-                    class="search-input" 
-                    placeholder="Search by keywords, company, or location..."
-                    aria-label="Search jobs"
+
+            <h3 class="filters-title">
+                Filter Jobs
+            </h3>
+
+            <div class="filter-chips">
+
+                <button
+                    class="filter-chip"
+                    data-filter="business analyst"
                 >
-            </div>
-
-            <!-- Filter chips -->
-            <div class="filters-container">
-                <!-- Job type filters (Transform/HR/PM/etc) -->
-                <div class="filter-group">
-                    <p class="filter-label">Job Type</p>
-                    <div class="filter-chips">
-                        <button class="filter-chip" data-filter-type="keyword" data-filter-value="Transformation Lead">
-                            <i class="ti ti-check chip-icon"></i>
-                            Transformation Lead
-                        </button>
-                        <button class="filter-chip" data-filter-type="keyword" data-filter-value="Business Analyst">
-                            <i class="ti ti-check chip-icon"></i>
-                            Business Analyst
-                        </button>
-                        <button class="filter-chip" data-filter-type="keyword" data-filter-value="Program Manager">
-                            <i class="ti ti-check chip-icon"></i>
-                            Program Manager
-                        </button>
-                        <button class="filter-chip" data-filter-type="keyword" data-filter-value="Change Manager">
-                            <i class="ti ti-check chip-icon"></i>
-                            Change Manager
-                        </button>
-                        <button class="filter-chip" data-filter-type="keyword" data-filter-value="Delivery Lead">
-                            <i class="ti ti-check chip-icon"></i>
-                            Delivery Lead
-                        </button>
-                        <button class="filter-chip" data-filter-type="keyword" data-filter-value="PMO">
-                            <i class="ti ti-check chip-icon"></i>
-                            PMO
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Work arrangement filters -->
-                <div class="filter-group">
-                    <p class="filter-label">Work Arrangement</p>
-                    <div class="filter-chips">
-                        <button class="filter-chip" data-filter-type="arrangement" data-filter-value="Remote">
-                            <i class="ti ti-check chip-icon"></i>
-                            Remote
-                        </button>
-                        <button class="filter-chip" data-filter-type="arrangement" data-filter-value="Hybrid">
-                            <i class="ti ti-check chip-icon"></i>
-                            Hybrid
-                        </button>
-                        <button class="filter-chip" data-filter-type="arrangement" data-filter-value="Onsite">
-                            <i class="ti ti-check chip-icon"></i>
-                            Onsite
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Employment type filters -->
-                <div class="filter-group">
-                    <p class="filter-label">Employment Type</p>
-                    <div class="filter-chips">
-                        <button class="filter-chip" data-filter-type="employment" data-filter-value="Full-time">
-                            <i class="ti ti-check chip-icon"></i>
-                            Full-time
-                        </button>
-                        <button class="filter-chip" data-filter-type="employment" data-filter-value="Contract">
-                            <i class="ti ti-check chip-icon"></i>
-                            Contract
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Clear filters button -->
-                <button class="btn-clear-filters" id="clearFilters">
-                    <i class="ti ti-x"></i>
-                    Clear All Filters
+                    BA
                 </button>
+
+                <button
+                    class="filter-chip"
+                    data-filter="program manager"
+                >
+                    Program Manager
+                </button>
+
+                <button
+                    class="filter-chip"
+                    data-filter="erp"
+                >
+                    ERP
+                </button>
+
+                <button
+                    class="filter-chip"
+                    data-filter="delivery"
+                >
+                    Delivery
+                </button>
+
+                <button
+                    class="filter-chip"
+                    data-filter="pmo"
+                >
+                    PMO
+                </button>
+
+                <button
+                    class="filter-chip"
+                    data-filter="transformation"
+                >
+                    Transformation
+                </button>
+
+                <button
+                    class="filter-chip"
+                    data-filter="technology"
+                >
+                    Technology
+                </button>
+
+                <button
+                    class="filter-chip"
+                    data-filter="workday"
+                >
+                    Workday
+                </button>
+
+                <button
+                    class="filter-chip"
+                    data-filter="sap"
+                >
+                    SAP
+                </button>
+
             </div>
+
         </section>
 
-        <!-- Results info and sort -->
-        <section class="results-header">
-            <div class="results-info">
-                <span id="jobCount" class="job-count">Loading jobs...</span>
-                <span id="lastUpdated" class="last-updated"></span>
+
+        <!-- JOBS -->
+
+        <section class="jobs-section">
+
+            <div
+                class="jobs-container"
+                id="jobsContainer"
+            >
+
             </div>
+
         </section>
 
-        <!-- Loading state -->
-        <div id="loadingState" class="loading-state">
-            <div class="spinner"></div>
-            <p>Searching for transformation jobs in Melbourne...</p>
-        </div>
+    </div>
 
-        <!-- Error state -->
-        <div id="errorState" class="error-state hidden">
-            <i class="ti ti-alert-circle error-icon"></i>
-            <h3>Unable to Load Jobs</h3>
-            <p id="errorMessage">Please check your API configuration and try again.</p>
-            <button class="btn-retry" id="retryButton">
-                <i class="ti ti-refresh"></i>
-                Retry
-            </button>
-        </div>
-
-        <!-- Jobs grid container -->
-        <section id="jobsContainer" class="jobs-grid">
-            <!-- Job cards will be inserted here by JavaScript -->
-        </section>
-
-        <!-- No results state -->
-        <div id="noResultsState" class="no-results-state hidden">
-            <i class="ti ti-search no-results-icon"></i>
-            <h3>No jobs found</h3>
-            <p>Try adjusting your filters or search terms to see more opportunities.</p>
-        </div>
-
-    </main>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-content">
-            <p>
-                <strong>Data Source:</strong> Powered by Adzuna API
-            </p>
-            <p>
-                <strong>Last Updated:</strong> <span id="footerTime">Just now</span>
-            </p>
-            <p style="font-size: 12px; color: var(--color-text-tertiary); margin-top: 8px;">
-                This is an unofficial job aggregator. Always verify job details on the source site before applying.
-            </p>
-        </div>
-    </footer>
-
-    <!-- Our custom JavaScript -->
     <script src="script.js"></script>
+
 </body>
 </html>
