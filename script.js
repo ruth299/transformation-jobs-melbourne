@@ -157,7 +157,12 @@ function renderJobs(jobs) {
             </p>
 
             <div class="job-footer">
-                <span>Via Adzuna</span>
+               <span>
+    Source: ${
+        job.company?.display_name
+        || 'Adzuna'
+    }
+</span>
 
                 <a href="${job.redirect_url}" 
                    target="_blank">
