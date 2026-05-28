@@ -1,10 +1,9 @@
 /* ====================================================
-   TRANSFORMATION JOBS MELBOURNE - JAVASCRIPT
+   TRANSFORMATION JOBS MELBOURNE - JAVASCRIPT (FIXED)
    Handles API calls, filtering, and UI rendering
    ==================================================== */
 
 // ---- API CONFIGURATION ----
-// Adzuna API credentials for job search
 const API_CONFIG = {
     appId: '45773940',
     apiKey: '19373b4fdefafdc7dbe4a625f0910e2d',
@@ -12,7 +11,6 @@ const API_CONFIG = {
 };
 
 // ---- TARGET JOB KEYWORDS ----
-// These are the main transformation-related roles we're searching for
 const TARGET_KEYWORDS = [
     'Transformation Lead',
     'Business Transformation',
@@ -27,8 +25,8 @@ const TARGET_KEYWORDS = [
 ];
 
 // ---- STATE MANAGEMENT ----
-let allJobs = []; // Store all fetched jobs
-let filteredJobs = []; // Store filtered results
+let allJobs = [];
+let filteredJobs = [];
 let activeFilters = {
     keyword: [],
     arrangement: [],
@@ -54,13 +52,9 @@ const footerTime = document.getElementById('footerTime');
 
 // ---- INITIALIZATION ----
 document.addEventListener('DOMContentLoaded', function() {
-    // Fetch jobs when page loads
+    console.log('Page loaded - Starting fetch');
     fetchJobs();
-    
-    // Set up event listeners
     setupEventListeners();
-    
-    // Update footer timestamp
     updateTimestamp();
 });
 
@@ -69,160 +63,147 @@ async function fetchJobs() {
     showLoading();
     
     try {
-        // Search for transformation jobs - simpler query for faster API response
-        // Instead of complex OR query which is slow, we search for "transformation"
+        // Build the URL with proper parameters
         const params = new URLSearchParams({
             app_id: API_CONFIG.appId,
             app_key: API_CONFIG.apiKey,
-            what: 'transformation', // Simpler, faster search term
-            where: 'Melbourne', // Just Melbourne for faster results
-            results_per_page: 100, // Get more results at once
-            sort_by: 'date', // Sort by most recent
+            what: 'transformation',
+            where: 'Melbourne',
+            results_per_page: 100,
+            sort_by: 'date',
             sort_direction: 'descending'
         });
         
         const url = `${API_CONFIG.baseUrl}?${params.toString()}`;
+        console.log('API URL:', url);
         
-        console.log('Fetching from:', url);
-        const startTime = Date.now();
+        // Make the fetch request
+        const response = await fetch(url);
+        console.log('Response status:', response.status);
         
-        // Make the API request with 15 second timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
-        
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            },
-            signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        const responseTime = Date.now() - startTime;
-        console.log('Response status:', response.status, 'Time:', responseTime + 'ms');
-        
-        // Check if request was successful
+        // Check if response is OK
         if (!response.ok) {
-            // If API key is not set, show helpful error
-            if (API_CONFIG.apiKey === 'YOUR_API_KEY_HERE') {
-                throw new Error('Please add your Adzuna API key to the script.js file (API_CONFIG.apiKey)');
-            }
             throw new Error(`API Error: ${response.status} ${response.statusText}`);
         }
         
-        // Parse the JSON response
+        // Parse JSON response
         const data = await response.json();
-        console.log('API Response:', data);
+        console.log('Data received:', data);
         
-        // Check if we got any results
-        if (!data.results || data.results.length === 0) {
+        // Check if results exist
+        if (!data || !data.results) {
+            console.log('No results in response');
             allJobs = [];
+            hideLoading();
             showNoResults();
+            jobCount.textContent = 'No jobs found';
             return;
         }
         
-        // Store the jobs and apply initial filters
-        allJobs = data.results;
-        filterJobs();
+        // Check if results array is empty
+        if (data.results.length === 0) {
+            console.log('Results array is empty');
+            allJobs = [];
+            hideLoading();
+            showNoResults();
+            jobCount.textContent = 'No jobs found';
+            return;
+        }
         
-        // Show success state
+        // Success - store jobs
+        console.log(`Successfully received ${data.results.length} jobs`);
+        allJobs = data.results;
+        
+        // Filter and render
+        filterJobs();
         hideLoading();
         renderJobs();
         
     } catch (error) {
-        // Show error message to user
-        console.error('Error fetching jobs:', error);
+        console.error('Fetch error:', error);
+        hideLoading();
         
-        // Better error messages
+        let errorMsg = error.message;
         if (error.name === 'AbortError') {
-            showError('Request took too long. The Adzuna API server is slow right now. Please refresh and try again.');
+            errorMsg = 'Request timeout. API server is slow.';
         } else if (error.message.includes('Failed to fetch')) {
-            showError('Network error. Please check your internet connection and try again.');
-        } else {
-            showError(error.message);
+            errorMsg = 'Network error. Check internet connection.';
         }
+        
+        errorMessage.textContent = errorMsg;
+        errorState.classList.remove('hidden');
     }
 }
 
 // ---- SET UP EVENT LISTENERS ----
 function setupEventListeners() {
-    // Search input - filter on every keystroke
-    searchInput.addEventListener('input', function(e) {
-        activeFilters.search = e.target.value.toLowerCase();
-        filterJobs();
-        renderJobs();
-    });
+    // Search input
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            activeFilters.search = e.target.value.toLowerCase();
+            filterJobs();
+            renderJobs();
+        });
+    }
     
-    // Filter chips - toggle filters when clicked
+    // Filter chips
     filterChips.forEach(chip => {
         chip.addEventListener('click', function() {
             const filterType = this.dataset.filterType;
             const filterValue = this.dataset.filterValue;
-            
-            // Toggle the filter
             toggleFilter(filterType, filterValue);
         });
     });
     
-    // Clear all filters button
-    clearFiltersBtn.addEventListener('click', function() {
-        // Reset all filters
-        activeFilters = {
-            keyword: [],
-            arrangement: [],
-            employment: [],
-            salary: [],
-            location: [],
-            search: ''
-        };
-        
-        // Reset search input
-        searchInput.value = '';
-        
-        // Deactivate all chips
-        filterChips.forEach(chip => {
-            chip.classList.remove('active');
+    // Clear filters button
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', function() {
+            activeFilters = {
+                keyword: [],
+                arrangement: [],
+                employment: [],
+                salary: [],
+                location: [],
+                search: ''
+            };
+            
+            searchInput.value = '';
+            
+            filterChips.forEach(chip => {
+                chip.classList.remove('active');
+            });
+            
+            filterJobs();
+            renderJobs();
         });
-        
-        // Re-filter and render
-        filterJobs();
-        renderJobs();
-    });
+    }
     
     // Retry button
-    retryButton.addEventListener('click', function() {
-        fetchJobs();
-    });
+    if (retryButton) {
+        retryButton.addEventListener('click', function() {
+            fetchJobs();
+        });
+    }
 }
 
 // ---- TOGGLE FILTER ----
 function toggleFilter(filterType, filterValue) {
-    // Get the current filter array
     const filterArray = activeFilters[filterType];
-    
-    // Check if value is already in the filter
     const index = filterArray.indexOf(filterValue);
     
     if (index > -1) {
-        // Remove if already exists
         filterArray.splice(index, 1);
     } else {
-        // Add if doesn't exist
         filterArray.push(filterValue);
     }
     
-    // Update the chip UI
     updateChipUI(filterType, filterValue);
-    
-    // Re-filter and render
     filterJobs();
     renderJobs();
 }
 
 // ---- UPDATE CHIP UI ----
 function updateChipUI(filterType, filterValue) {
-    // Find the chip and toggle active class
     filterChips.forEach(chip => {
         if (chip.dataset.filterType === filterType && chip.dataset.filterValue === filterValue) {
             chip.classList.toggle('active');
@@ -233,7 +214,7 @@ function updateChipUI(filterType, filterValue) {
 // ---- FILTER JOBS ----
 function filterJobs() {
     filteredJobs = allJobs.filter(job => {
-        // Search filter - match against title and company
+        // Search filter
         if (activeFilters.search) {
             const searchTerm = activeFilters.search;
             const titleMatch = (job.title || '').toLowerCase().includes(searchTerm);
@@ -244,7 +225,7 @@ function filterJobs() {
             }
         }
         
-        // Keyword filter - must match at least one selected keyword
+        // Keyword filter
         if (activeFilters.keyword.length > 0) {
             const jobTitle = (job.title || '').toLowerCase();
             const jobDesc = (job.description || '').toLowerCase();
@@ -283,13 +264,11 @@ function filterJobs() {
             }
         }
         
-        // Salary filter - filter by minimum salary
+        // Salary filter
         if (activeFilters.salary.length > 0) {
             const minSalary = Math.max(...activeFilters.salary.map(s => parseInt(s)));
             
-            if (job.salary_min && job.salary_min >= minSalary) {
-                // Job meets salary requirement
-            } else {
+            if (!job.salary_min || job.salary_min < minSalary) {
                 return false;
             }
         }
@@ -306,17 +285,14 @@ function filterJobs() {
             }
         }
         
-        // If all filters passed, include the job
         return true;
     });
 }
 
 // ---- RENDER JOBS ----
 function renderJobs() {
-    // Clear the container
     jobsContainer.innerHTML = '';
     
-    // Show appropriate state
     if (filteredJobs.length === 0) {
         hideLoading();
         showNoResults();
@@ -324,15 +300,12 @@ function renderJobs() {
         return;
     }
     
-    // Hide error and no results states
     hideLoading();
     errorState.classList.add('hidden');
     noResultsState.classList.add('hidden');
     
-    // Update job count
     jobCount.textContent = `${filteredJobs.length} job${filteredJobs.length !== 1 ? 's' : ''} found`;
     
-    // Create and append job cards
     filteredJobs.forEach(job => {
         const jobCard = createJobCard(job);
         jobsContainer.appendChild(jobCard);
@@ -341,28 +314,23 @@ function renderJobs() {
 
 // ---- CREATE JOB CARD ----
 function createJobCard(job) {
-    // Create the card element
     const card = document.createElement('div');
     card.className = 'job-card';
     
-    // Calculate days since posted
     const postedDate = new Date(job.created);
     const today = new Date();
     const daysSincePosted = Math.floor((today - postedDate) / (1000 * 60 * 60 * 24));
     const daysText = daysSincePosted === 0 ? 'Today' : daysSincePosted === 1 ? 'Yesterday' : `${daysSincePosted} days ago`;
     
-    // Extract work arrangement and employment type tags
     const jobDesc = (job.description || '').toLowerCase();
     const tags = [];
     
     if (jobDesc.includes('remote')) tags.push('remote');
     if (jobDesc.includes('hybrid')) tags.push('hybrid');
     if (jobDesc.includes('onsite') || jobDesc.includes('on-site')) tags.push('onsite');
-    
     if (jobDesc.includes('full-time') || jobDesc.includes('full time')) tags.push('full-time');
     if (jobDesc.includes('contract')) tags.push('contract');
     
-    // Build the card HTML
     card.innerHTML = `
         <div class="job-header">
             <h3 class="job-title">
@@ -422,7 +390,6 @@ function createJobCard(job) {
 
 // ---- UTILITY FUNCTIONS ----
 
-// Format salary to readable format
 function formatSalary(salary) {
     if (salary >= 1000000) {
         return '$' + (salary / 1000000).toFixed(1) + 'M';
@@ -432,7 +399,6 @@ function formatSalary(salary) {
     return '$' + salary;
 }
 
-// Escape HTML special characters to prevent XSS
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -440,12 +406,10 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Capitalize first letter of string
 function capitalizeFirst(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-// Detect job source from URL
 function getSourceName(url) {
     if (!url) return 'Unknown Source';
     const urlLower = url.toLowerCase();
@@ -463,7 +427,6 @@ function getSourceName(url) {
     return 'Job Board';
 }
 
-// Update timestamp in footer
 function updateTimestamp() {
     const now = new Date();
     const timeString = now.toLocaleTimeString('en-AU', {
@@ -472,12 +435,13 @@ function updateTimestamp() {
         second: '2-digit'
     });
     const dateString = now.toLocaleDateString('en-AU');
-    footerTime.textContent = `${dateString} at ${timeString}`;
+    if (footerTime) {
+        footerTime.textContent = `${dateString} at ${timeString}`;
+    }
 }
 
 // ---- STATE MANAGEMENT FUNCTIONS ----
 
-// Show loading state
 function showLoading() {
     loadingState.classList.remove('hidden');
     errorState.classList.add('hidden');
@@ -485,12 +449,10 @@ function showLoading() {
     jobsContainer.innerHTML = '';
 }
 
-// Hide loading state
 function hideLoading() {
     loadingState.classList.add('hidden');
 }
 
-// Show error state
 function showError(message) {
     hideLoading();
     errorState.classList.remove('hidden');
@@ -498,21 +460,17 @@ function showError(message) {
     jobsContainer.innerHTML = '';
 }
 
-// Show no results state
 function showNoResults() {
     errorState.classList.add('hidden');
     noResultsState.classList.remove('hidden');
 }
 
 // ---- ACCESSIBILITY ----
-// Add ARIA labels and roles for better accessibility
 document.addEventListener('DOMContentLoaded', function() {
-    // Ensure filter buttons are keyboard accessible
     filterChips.forEach(chip => {
         chip.setAttribute('role', 'button');
         chip.setAttribute('tabindex', '0');
         
-        // Add keyboard support for Enter and Space
         chip.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
