@@ -8,8 +8,8 @@ console.log('App loaded');
 const APP_ID = '45773940';
 const API_KEY = '19373b4fdefafdc7dbe4a625f0910e2d';
 
-// API URL with CORS proxy
-const API_URL = `https://corsproxy.io/?https://api.adzuna.com/v1/api/jobs/au/search/1?app_id=${APP_ID}&app_key=${API_KEY}&results_per_page=100&what=technology&where=Melbourne&sort_by=date&content-type=application/json`;
+// API URL with CORS proxy - searches for business analyst and transformation roles
+const API_URL = `https://corsproxy.io/?https://api.adzuna.com/v1/api/jobs/au/search/1?app_id=${APP_ID}&app_key=${API_KEY}&results_per_page=200&what=business%20analyst&where=Melbourne&sort_by=date&content-type=application/json`;
 
 // STATE
 let allJobs = [];
@@ -117,7 +117,10 @@ function applyFilters() {
             matchesFilters = activeFilters.some(filter => {
                 switch(filter.type) {
                     case 'keyword':
-                        return jobText.includes(filter.value);
+                        // More flexible keyword matching
+                        return jobText.includes(filter.value) || 
+                               (filter.value === 'transformation lead' && (jobText.includes('transformation') || jobText.includes('lead'))) ||
+                               (filter.value === 'business analyst' && (jobText.includes('business') || jobText.includes('analyst') || jobText.includes('ba')));
                     case 'salary':
                         return job.salary_max >= parseInt(filter.value);
                     case 'location':
