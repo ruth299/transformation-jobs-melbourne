@@ -1,132 +1,236 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
 
-<!-- ===================================================
-     DASHBOARD SECTION
-=================================================== -->
-
-<div class="dashboard-stats">
-
-    <div class="stat-card">
-        <div
-            class="stat-number"
-            id="totalJobs"
-        >
-            0
-        </div>
-
-        <div class="stat-label">
-            Total Jobs
-        </div>
-    </div>
-
-    <div class="stat-card">
-        <div
-            class="stat-number"
-            id="newJobsToday"
-        >
-            0
-        </div>
-
-        <div class="stat-label">
-            New Today
-        </div>
-    </div>
-
-    <div class="stat-card">
-        <div
-            class="stat-number"
-            id="avgSalary"
-        >
-            N/A
-        </div>
-
-        <div class="stat-label">
-            Average Salary
-        </div>
-    </div>
-
-    <div class="stat-card">
-        <div
-            class="stat-number"
-            id="lastUpdated"
-        >
-            --
-        </div>
-
-        <div class="stat-label">
-            Last Updated
-        </div>
-    </div>
-
-</div>
-
-<!-- ===================================================
-     SEARCH SECTION
-=================================================== -->
-
-<div class="search-section">
-
-    <input
-        type="text"
-        id="searchInput"
-        placeholder="Search jobs, skills, companies, ERP, transformation..."
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
     />
 
-</div>
+    <title>
+        Transformation Jobs Melbourne
+    </title>
 
-<!-- ===================================================
-     JOB COUNT
-=================================================== -->
+    <!-- Google Font -->
 
-<div id="jobCount">
-    Loading jobs...
-</div>
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    />
 
-<!-- ===================================================
-     STATES
-=================================================== -->
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    />
 
-<!-- Loading -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    />
 
-<div
-    id="loadingState"
-    class="loading-state"
->
-    Loading jobs...
-</div>
+    <!-- Styles -->
 
-<!-- Error -->
+    <link
+        rel="stylesheet"
+        href="styles.css"
+    />
+</head>
 
-<div
-    id="errorState"
-    class="hidden"
->
-    <p id="errorMessage">
-        Something went wrong
-    </p>
+<body>
 
-    <button
-        id="retryButton"
-        class="apply-btn"
-    >
-        Retry
-    </button>
-</div>
+    <div class="container">
 
-<!-- No Results -->
+        <!-- ==========================================
+             HEADER
+        ========================================== -->
 
-<div
-    id="noResultsState"
-    class="hidden"
->
-    No jobs found.
-</div>
+        <header class="page-header">
 
-<!-- ===================================================
-     JOBS CONTAINER
-=================================================== -->
+            <h1 class="page-title">
+                Transformation Jobs Melbourne
+            </h1>
 
-<div
-    id="jobsContainer"
->
-</div>
+            <p class="page-subtitle">
+                PM, ERP, Business Analysis,
+                Technology Transformation
+                & Delivery Roles
+            </p>
+
+        </header>
+
+        <!-- ==========================================
+             DASHBOARD STATS
+        ========================================== -->
+
+        <section
+            class="dashboard-stats"
+        >
+
+            <div class="stat-card">
+
+                <div
+                    class="stat-number"
+                    id="totalJobs"
+                >
+                    0
+                </div>
+
+                <div
+                    class="stat-label"
+                >
+                    Total Jobs
+                </div>
+
+            </div>
+
+            <div class="stat-card">
+
+                <div
+                    class="stat-number"
+                    id="newJobsToday"
+                >
+                    0
+                </div>
+
+                <div
+                    class="stat-label"
+                >
+                    New Today
+                </div>
+
+            </div>
+
+            <div class="stat-card">
+
+                <div
+                    class="stat-number"
+                    id="avgSalary"
+                >
+                    N/A
+                </div>
+
+                <div
+                    class="stat-label"
+                >
+                    Avg Salary
+                </div>
+
+            </div>
+
+            <div class="stat-card">
+
+                <div
+                    class="stat-number"
+                    id="lastUpdated"
+                >
+                    --
+                </div>
+
+                <div
+                    class="stat-label"
+                >
+                    Last Updated
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ==========================================
+             SEARCH
+        ========================================== -->
+
+        <section
+            class="search-section"
+        >
+
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="Search jobs, skills, companies, ERP, transformation..."
+            />
+
+        </section>
+
+        <!-- ==========================================
+             JOB COUNT
+        ========================================== -->
+
+        <div id="jobCount">
+            Loading jobs...
+        </div>
+
+        <!-- ==========================================
+             LOADING STATE
+        ========================================== -->
+
+        <div
+            id="loadingState"
+        >
+
+            <p>
+                Loading latest jobs...
+            </p>
+
+        </div>
+
+        <!-- ==========================================
+             ERROR STATE
+        ========================================== -->
+
+        <div
+            id="errorState"
+            class="hidden"
+        >
+
+            <p id="errorMessage">
+                Unable to load jobs.
+            </p>
+
+            <button
+                id="retryButton"
+                class="apply-btn"
+            >
+                Retry
+            </button>
+
+        </div>
+
+        <!-- ==========================================
+             NO RESULTS
+        ========================================== -->
+
+        <div
+            id="noResultsState"
+            class="hidden"
+        >
+
+            <p>
+                No matching jobs found.
+            </p>
+
+        </div>
+
+        <!-- ==========================================
+             JOBS CONTAINER
+        ========================================== -->
+
+        <section
+            id="jobsContainer"
+        >
+        </section>
+
+    </div>
+
+    <!-- ==========================================
+         SCRIPT
+    ========================================== -->
+
+    <script src="script.js"></script>
+
+</body>
+</html>
 ```
