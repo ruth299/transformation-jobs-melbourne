@@ -1,17 +1,14 @@
-
+```javascript
 /* ==========================================
-   TRANSFORMATION JOBS MELBOURNE - SCRIPT V2
-   Premium Dashboard + Better API Handling
+   TRANSFORMATION JOBS MELBOURNE - SCRIPT V3
+   Fixed Loading + Dashboard + Filters
 ========================================== */
 
-console.log('App loaded');
+console.log('SCRIPT IS RUNNING');
 
 /* ==========================================
    CONFIG
 ========================================== */
-
-// NOTE:
-// Move these to backend later for security
 
 const APP_ID = '45773940';
 const API_KEY = '19373b4fdefafdc7dbe4a625f0910e2d';
@@ -27,9 +24,6 @@ const SEARCH_TERMS = [
     'delivery lead'
 ];
 
-const BASE_URL =
-    'https://corsproxy.io/?https://api.adzuna.com/v1/api/jobs/au/search/1';
-
 /* ==========================================
    STATE
 ========================================== */
@@ -42,43 +36,59 @@ let filteredJobs = [];
 ========================================== */
 
 const jobsContainer =
-    document.getElementById('jobsContainer');
+    document.getElementById(
+        'jobsContainer'
+    );
 
 const searchInput =
-    document.getElementById('searchInput');
-
-const filterChips =
-    document.querySelectorAll('.filter-chip');
+    document.getElementById(
+        'searchInput'
+    );
 
 const jobCount =
-    document.getElementById('jobCount');
+    document.getElementById(
+        'jobCount'
+    );
 
 const totalJobs =
-    document.getElementById('totalJobs');
+    document.getElementById(
+        'totalJobs'
+    );
 
 const newJobsToday =
-    document.getElementById('newJobsToday');
+    document.getElementById(
+        'newJobsToday'
+    );
 
 const avgSalary =
-    document.getElementById('avgSalary');
+    document.getElementById(
+        'avgSalary'
+    );
 
 const lastUpdated =
-    document.getElementById('lastUpdated');
-
-const clearFiltersBtn =
-    document.getElementById('clearFilters');
+    document.getElementById(
+        'lastUpdated'
+    );
 
 const retryButton =
-    document.getElementById('retryButton');
+    document.getElementById(
+        'retryButton'
+    );
 
 const loadingState =
-    document.getElementById('loadingState');
+    document.getElementById(
+        'loadingState'
+    );
 
 const errorState =
-    document.getElementById('errorState');
+    document.getElementById(
+        'errorState'
+    );
 
 const noResultsState =
-    document.getElementById('noResultsState');
+    document.getElementById(
+        'noResultsState'
+    );
 
 /* ==========================================
    INIT
@@ -88,29 +98,15 @@ document.addEventListener(
     'DOMContentLoaded',
     () => {
 
+        console.log(
+            'Page loaded'
+        );
+
         fetchJobs();
 
         searchInput?.addEventListener(
             'input',
             applyFilters
-        );
-
-        filterChips.forEach(chip => {
-            chip.addEventListener(
-                'click',
-                () => {
-                    chip.classList.toggle(
-                        'active'
-                    );
-
-                    applyFilters();
-                }
-            );
-        });
-
-        clearFiltersBtn?.addEventListener(
-            'click',
-            clearFilters
         );
 
         retryButton?.addEventListener(
@@ -134,67 +130,117 @@ async function fetchJobs() {
             'Fetching jobs...'
         );
 
-        const requests =
-            SEARCH_TERMS.map(term => {
+        const allResults = [];
 
-                const url =
-                    `${BASE_URL}` +
-                    `?app_id=${APP_ID}` +
-                    `&app_key=${API_KEY}` +
-                    `&results_per_page=50` +
-                    `&what=${encodeURIComponent(term)}` +
-                    `&where=Melbourne` +
-                    `&sort_by=date` +
-                    `&content-type=application/json`;
+        for (
+            const term of SEARCH_TERMS
+        ) {
 
-                return fetch(url)
-                    .then(response => {
+            const apiUrl =
+                `https://api.adzuna.com/v1/api/jobs/au/search/1` +
+                `?app_id=${APP_ID}` +
+                `&app_key=${API_KEY}` +
+                `&results_per_page=30` +
+                `&what=${encodeURIComponent(term)}` +
+                `&where=Melbourne` +
+                `&sort_by=date`;
 
-                        if (!response.ok) {
-                            throw new Error(
-                                `API Error ${response.status}`
-                            );
-                        }
+            // Better CORS proxy
+            const proxyUrl =
+                `https://api.allorigins.win/raw?url=` +
+                encodeURIComponent(
+                    apiUrl
+                );
 
-                        return response.json();
-                    });
-            });
+            console.log(
+                'Loading:',
+                term
+            );
 
-        const responses =
-            await Promise.all(requests);
+            try {
 
+                const response =
+                    await fetch(
+                        proxyUrl
+                    );
+
+                if (
+                    !response.ok
+                ) {
+
+                    console.warn(
+                        `Failed: ${term}`
+                    );
+
+                    continue;
+                }
+
+                const data =
+                    await response.json();
+
+                const jobs =
+                    data.results || [];
+
+                console.log(
+                    `${term}:`,
+                    jobs.length
+                );
+
+                allResults.push(
+                    ...jobs
+                );
+
+            } catch (err) {
+
+                console.warn(
+                    `Error: ${term}`,
+                    err
+                );
+            }
+        }
+
+        // remove duplicates
         const jobsMap =
             new Map();
 
-        responses.forEach(data => {
+        allResults.forEach(
+            job => {
 
-            const jobs =
-                data.results || [];
+                if (
+                    job.id
+                ) {
 
-            jobs.forEach(job => {
-
-                if (job.id) {
                     jobsMap.set(
                         job.id,
                         job
                     );
                 }
-            });
-        });
+            }
+        );
 
         allJobs =
             Array.from(
                 jobsMap.values()
             );
 
+        // newest first
         allJobs.sort(
             (a, b) =>
-                new Date(b.created) -
-                new Date(a.created)
+                new Date(
+                    b.created
+                ) -
+                new Date(
+                    a.created
+                )
         );
 
         filteredJobs =
             [...allJobs];
+
+        console.log(
+            'TOTAL JOBS:',
+            allJobs.length
+        );
 
         updateDashboardStats();
 
@@ -204,15 +250,17 @@ async function fetchJobs() {
 
         updateTimestamp();
 
+        hideLoadingState();
+
     } catch (error) {
 
         console.error(
-            'Error loading jobs:',
+            'BIG ERROR:',
             error
         );
 
         showErrorState(
-            'Unable to load jobs right now. Please retry.'
+            'Unable to load jobs. Please try again.'
         );
     }
 }
@@ -225,49 +273,29 @@ function applyFilters() {
 
     const searchTerm =
         (
-            searchInput?.value || ''
+            searchInput?.value ||
+            ''
         ).toLowerCase();
 
     filteredJobs =
-        allJobs.filter(job => {
+        allJobs.filter(
+            job => {
 
-            const text = `
-                ${job.title || ''}
-                ${job.description || ''}
-                ${job.company?.display_name || ''}
-                ${job.location?.display_name || ''}
-            `.toLowerCase();
+                const text = `
+                    ${job.title || ''}
+                    ${job.description || ''}
+                    ${job.company?.display_name || ''}
+                    ${job.location?.display_name || ''}
+                `.toLowerCase();
 
-            return (
-                !searchTerm ||
-                text.includes(
-                    searchTerm
-                )
-            );
-        });
-
-    renderJobs(filteredJobs);
-}
-
-/* ==========================================
-   CLEAR FILTERS
-========================================== */
-
-function clearFilters() {
-
-    if (searchInput) {
-        searchInput.value = '';
-    }
-
-    filterChips.forEach(
-        chip =>
-            chip.classList.remove(
-                'active'
-            )
-    );
-
-    filteredJobs =
-        [...allJobs];
+                return (
+                    !searchTerm ||
+                    text.includes(
+                        searchTerm
+                    )
+                );
+            }
+        );
 
     renderJobs(
         filteredJobs
@@ -287,15 +315,12 @@ function updateDashboardStats() {
         );
 
     const todayJobs =
-        allJobs.filter(job => {
-
-            const days =
+        allJobs.filter(
+            job =>
                 getPostedDays(
                     job.created
-                );
-
-            return days === 0;
-        });
+                ) === 0
+        );
 
     newJobsToday &&
         (
@@ -306,18 +331,25 @@ function updateDashboardStats() {
     const salaries =
         allJobs
             .filter(
-                j => j.salary_max
+                j =>
+                    j.salary_max
             )
             .map(
-                j => j.salary_max
+                j =>
+                    j.salary_max
             );
 
     const average =
         salaries.length
             ? salaries.reduce(
-                (a, b) => a + b,
-                0
-              ) / salaries.length
+                  (
+                      a,
+                      b
+                  ) =>
+                      a + b,
+                  0
+              ) /
+              salaries.length
             : 0;
 
     avgSalary &&
@@ -325,7 +357,8 @@ function updateDashboardStats() {
             avgSalary.textContent =
             average
                 ? `$${Math.round(
-                    average / 1000
+                    average /
+                    1000
                   )}K`
                 : 'N/A'
         );
@@ -335,14 +368,18 @@ function updateDashboardStats() {
    RENDER JOBS
 ========================================== */
 
-function renderJobs(jobs) {
+function renderJobs(
+    jobs
+) {
 
-    jobsContainer.innerHTML = '';
+    jobsContainer.innerHTML =
+        '';
 
-    hideLoadingState();
     hideErrorState();
 
-    if (!jobs.length) {
+    if (
+        !jobs.length
+    ) {
 
         showNoResultsState();
 
@@ -355,6 +392,10 @@ function renderJobs(jobs) {
         return;
     }
 
+    noResultsState?.classList.add(
+        'hidden'
+    );
+
     jobCount &&
         (
             jobCount.textContent =
@@ -362,15 +403,21 @@ function renderJobs(jobs) {
         );
 
     jobs.forEach(
-        (job, index) => {
+        (
+            job,
+            index
+        ) => {
 
             const card =
-                createJobCard(job);
+                createJobCard(
+                    job
+                );
 
             card.style.animation =
                 `fadeIn ${
-                    150 +
-                    index * 25
+                    120 +
+                    index *
+                    20
                 }ms ease forwards`;
 
             jobsContainer.appendChild(
@@ -384,7 +431,9 @@ function renderJobs(jobs) {
    JOB CARD
 ========================================== */
 
-function createJobCard(job) {
+function createJobCard(
+    job
+) {
 
     const card =
         document.createElement(
@@ -412,7 +461,8 @@ function createJobCard(job) {
             'en-AU',
             {
                 day: 'numeric',
-                month: 'short'
+                month:
+                    'short'
             }
         );
 
@@ -420,8 +470,10 @@ function createJobCard(job) {
         postedDate.toLocaleTimeString(
             'en-AU',
             {
-                hour: '2-digit',
-                minute: '2-digit'
+                hour:
+                    '2-digit',
+                minute:
+                    '2-digit'
             }
         );
 
@@ -429,9 +481,11 @@ function createJobCard(job) {
         job.salary_min &&
         job.salary_max
             ? `$${Math.round(
-                job.salary_min / 1000
+                job.salary_min /
+                1000
               )}K - $${Math.round(
-                job.salary_max / 1000
+                job.salary_max /
+                1000
               )}K`
             : 'Salary not listed';
 
@@ -454,7 +508,7 @@ function createJobCard(job) {
                 <p class="job-company">
                     ${escapeHtml(
                         job.company
-                        ?.display_name ||
+                            ?.display_name ||
                         'Company'
                     )}
                 </p>
@@ -470,12 +524,12 @@ function createJobCard(job) {
 
             ${
                 isNewToday
-                ? `
-                    <span class="new-badge">
-                        NEW TODAY
-                    </span>
-                  `
-                : ''
+                    ? `
+                <span class="new-badge">
+                    NEW TODAY
+                </span>
+            `
+                    : ''
             }
 
         </div>
@@ -488,7 +542,7 @@ function createJobCard(job) {
             📍
             ${escapeHtml(
                 job.location
-                ?.display_name ||
+                    ?.display_name ||
                 'Melbourne'
             )}
         </div>
@@ -518,12 +572,16 @@ function createJobCard(job) {
    HELPERS
 ========================================== */
 
-function getPostedDays(date) {
+function getPostedDays(
+    date
+) {
 
     return Math.floor(
         (
             new Date() -
-            new Date(date)
+            new Date(
+                date
+            )
         ) /
         (
             1000 *
@@ -542,20 +600,32 @@ function getSourceName(
         url.toLowerCase();
 
     if (
-        lower.includes('seek')
-    ) return 'Seek';
+        lower.includes(
+            'seek'
+        )
+    )
+        return 'Seek';
 
     if (
-        lower.includes('linkedin')
-    ) return 'LinkedIn';
+        lower.includes(
+            'linkedin'
+        )
+    )
+        return 'LinkedIn';
 
     if (
-        lower.includes('indeed')
-    ) return 'Indeed';
+        lower.includes(
+            'indeed'
+        )
+    )
+        return 'Indeed';
 
     if (
-        lower.includes('jora')
-    ) return 'Jora';
+        lower.includes(
+            'jora'
+        )
+    )
+        return 'Jora';
 
     return 'Job Board';
 }
@@ -572,11 +642,12 @@ function escapeHtml(
         "'": '&#039;'
     };
 
-    return String(text)
-        .replace(
-            /[&<>"']/g,
-            m => map[m]
-        );
+    return String(
+        text
+    ).replace(
+        /[&<>"']/g,
+        m => map[m]
+    );
 }
 
 /* ==========================================
@@ -596,8 +667,6 @@ function showLoadingState() {
     noResultsState?.classList.add(
         'hidden'
     );
-
-    jobsContainer.innerHTML = '';
 }
 
 function hideLoadingState() {
@@ -619,8 +688,6 @@ function showErrorState(
         'hidden'
     );
 
-    jobsContainer.innerHTML = '';
-
     const errorMessage =
         document.getElementById(
             'errorMessage'
@@ -641,15 +708,8 @@ function hideErrorState() {
     );
 }
 
-function showNoResultsState() {
-
-    noResultsState?.classList.remove(
-        'hidden'
-    );
-}
-
 /* ==========================================
-   LAST UPDATED
+   TIMESTAMP
 ========================================== */
 
 function updateTimestamp() {
@@ -659,16 +719,19 @@ function updateTimestamp() {
         .toLocaleTimeString(
             'en-AU',
             {
-                hour: '2-digit',
-                minute: '2-digit'
+                hour:
+                    '2-digit',
+                minute:
+                    '2-digit'
             }
         );
 
     if (
         lastUpdated
     ) {
+
         lastUpdated.textContent =
-            `Updated ${time}`;
+            time;
     }
 }
 ```
