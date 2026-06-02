@@ -1,258 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8" />
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    />
-
-    <title>
-        ERP Delivery & Technology Transformation Jobs Melbourne
-    </title>
-
-    <meta
-        name="description"
-        content="Project Manager,  Program Manager,  ERP, Transformation, Business Analyst, Senior Business Analyst, Senior Technical Business Analyst and Delivery jobs in Melbourne."
-    />
-
-    <!-- Google Font -->
-
-    <link
-        rel="preconnect"
-        href="https://fonts.googleapis.com"
-    />
-
-    <link
-        rel="preconnect"
-        href="https://fonts.gstatic.com"
-        crossorigin
-    />
-
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet"
-    />
-
-    <!-- CSS -->
-
-    <link
-        rel="stylesheet"
-        href="styles.css"
-    />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Melbourne Transformation Jobs Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="styles.css"/>
 </head>
-
 <body>
+<div class="shell">
 
-    <main class="container">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <span>JobDash <em>MEL</em></span>
+    </div>
+    <div class="live-pill" id="livePill"><span class="pulse"></span> LIVE</div>
 
-        <!-- ===========================
-             HEADER
-        ============================ -->
+    <nav class="filters">
+      <p class="filter-label">ROLE TYPE</p>
+      <button class="chip active" data-type="keyword" data-val="">All Roles</button>
+      <button class="chip" data-type="keyword" data-val="transformation">Transformation</button>
+      <button class="chip" data-type="keyword" data-val="business analyst">Business Analyst</button>
+      <button class="chip" data-type="keyword" data-val="program manager">Program Manager</button>
+      <button class="chip" data-type="keyword" data-val="project manager">Project Manager</button>
+      <button class="chip" data-type="keyword" data-val="change manager">Change Manager</button>
+      <button class="chip" data-type="keyword" data-val="erp">ERP</button>
+      <button class="chip" data-type="keyword" data-val="workday">Workday</button>
 
-        <header class="page-header">
+      <p class="filter-label" style="margin-top:24px;">WORK MODE</p>
+      <button class="chip" data-type="arrangement" data-val="hybrid">Hybrid</button>
+      <button class="chip" data-type="arrangement" data-val="remote">Remote</button>
 
-            <h1 class="page-title">
-                ERP Delivery & Technology Transformation Jobs Melbourne
-            </h1>
+      <p class="filter-label" style="margin-top:24px;">TYPE</p>
+      <button class="chip" data-type="employment" data-val="contract">Contract</button>
+      <button class="chip" data-type="employment" data-val="permanent">Permanent</button>
 
-            <p class="page-subtitle">
-                Program Management • ERP •
-                Transformation • Business
-                Analysis • Delivery Leadership . AI
-            </p>
+      <button class="clear-btn" id="clearBtn">↺ Clear Filters</button>
+    </nav>
 
-        </header>
+    <div class="sidebar-footer">
+      Built with VibecodeApp<br/>
+      <span id="sidebarTime">--</span>
+    </div>
+  </aside>
 
-        <!-- ===========================
-             DASHBOARD
-        ============================ -->
+  <!-- MAIN -->
+  <div class="main">
 
-        <section
-            class="dashboard-stats"
-        >
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1>ERP & Transformation Jobs</h1>
+        <p class="topbar-sub">Melbourne · Live market intelligence</p>
+      </div>
+      <div class="topbar-right">
+        <input type="text" id="searchInput" placeholder="Search roles, companies, skills…"/>
+      </div>
+    </header>
 
-            <div class="stat-card">
+    <!-- STAT CARDS -->
+    <section class="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon">📋</div>
+        <div><div class="stat-num" id="totalJobs">—</div><div class="stat-lbl">Total Roles</div></div>
+      </div>
+      <div class="stat-card accent">
+        <div class="stat-icon">🔥</div>
+        <div><div class="stat-num" id="newToday">—</div><div class="stat-lbl">New Today</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div><div class="stat-num" id="avgSalary">—</div><div class="stat-lbl">Avg Salary</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📍</div>
+        <div><div class="stat-num" id="topSource">—</div><div class="stat-lbl">Top Source</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🕐</div>
+        <div><div class="stat-num" id="lastUpdated">—</div><div class="stat-lbl">Refreshed</div></div>
+      </div>
+    </section>
 
-                <div
-                    class="stat-number"
-                    id="totalJobs"
-                >
-                    0
-                </div>
+    <!-- TREND CHARTS -->
+    <section class="charts-row">
+      <div class="chart-card wide">
+        <div class="chart-title">📈 Market Trend — Monthly Job Volume by Role <span class="chart-sub">via Adzuna History API</span></div>
+        <div class="chart-loading" id="trendLoading"><div class="spinner-sm"></div> Loading trend data…</div>
+        <div class="chart-error hidden" id="trendError">Trend data unavailable</div>
+        <canvas id="trendChart" class="hidden"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">🥧 Roles Breakdown <span class="chart-sub">current snapshot</span></div>
+        <canvas id="donutChart"></canvas>
+      </div>
+    </section>
 
-                <div
-                    class="stat-label"
-                >
-                    Total Jobs
-                </div>
+    <!-- RESULT BAR -->
+    <div class="result-bar">
+      <span id="jobCount">Loading live data…</span>
+      <button class="refresh-btn" id="refreshBtn">↻ Refresh</button>
+    </div>
 
-            </div>
+    <!-- TABLE HEAD -->
+    <div class="table-head hidden" id="tableHead">
+      <span>Role</span>
+      <span>Company</span>
+      <span>Salary</span>
+      <span>Posted</span>
+      <span>Source</span>
+      <span></span>
+    </div>
 
-            <div class="stat-card">
+    <!-- STATES -->
+    <div id="loadingState" class="state-box"><div class="spinner"></div><p>Pulling live jobs from Melbourne market…</p></div>
+    <div id="errorState" class="state-box hidden"><p id="errorMessage">Unable to load jobs.</p><button class="refresh-btn" id="retryButton">Retry</button></div>
+    <div id="noResultsState" class="state-box hidden"><p>No matching roles found. Try clearing your filters.</p></div>
 
-                <div
-                    class="stat-number"
-                    id="newJobsToday"
-                >
-                    0
-                </div>
+    <!-- JOBS -->
+    <section id="jobsContainer"></section>
 
-                <div
-                    class="stat-label"
-                >
-                    New Today
-                </div>
-
-            </div>
-
-            <div class="stat-card">
-
-                <div
-                    class="stat-number"
-                    id="avgSalary"
-                >
-                    N/A
-                </div>
-
-            </div>
-
-            <div class="stat-card">
-
-                <div
-                    class="stat-number"
-                    id="lastUpdated"
-                >
-                    --
-                </div>
-
-                <div
-                    class="stat-label"
-                >
-                    Last Updated
-                </div>
-
-            </div>
-
-        </section>
-
-        <!-- ===========================
-             SEARCH
-        ============================ -->
-
-        <section
-            class="search-section"
-        >
-
-            <input
-                type="text"
-                id="searchInput"
-                placeholder="Search job title, company, ERP, PM, transformation..."
-            />
-
-        </section>
-
-        <!-- ===========================
-             JOB COUNT
-        ============================ -->
-
-        <div id="jobCount">
-            Loading jobs...
-        </div>
-
-        <!-- ===========================
-             LOADING STATE
-        ============================ -->
-
-        <div
-            id="loadingState"
-        >
-
-            <div
-                style="
-                    padding:20px;
-                    text-align:center;
-                "
-            >
-                Loading latest jobs...
-            </div>
-
-        </div>
-
-        <!-- ===========================
-             ERROR STATE
-        ============================ -->
-
-        <div
-            id="errorState"
-            class="hidden"
-        >
-
-            <div
-                style="
-                    text-align:center;
-                    padding:40px;
-                "
-            >
-
-                <p
-                    id="errorMessage"
-                >
-                    Something went wrong.
-                </p>
-
-                <button
-                    id="retryButton"
-                    class="apply-btn"
-                >
-                    Retry
-                </button>
-
-            </div>
-
-        </div>
-
-        <!-- ===========================
-             NO RESULTS
-        ============================ -->
-
-        <div
-            id="noResultsState"
-            class="hidden"
-        >
-
-            <div
-                style="
-                    text-align:center;
-                    padding:30px;
-                "
-            >
-                No matching jobs found.
-            </div>
-
-        </div>
-
-        <!-- ===========================
-             JOB RESULTS
-        ============================ -->
-
-        <section
-            id="jobsContainer"
-        >
-        </section>
-
-    </main>
-
-    <!-- ===========================
-         SCRIPT
-    ============================ -->
-
-    <script
-        src="script.js"
-    ></script>
-
+  </div>
+</div>
+<script src="script.js"></script>
 </body>
 </html>
-```
