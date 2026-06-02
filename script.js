@@ -1,352 +1,355 @@
+/* =============================================
+   MELBOURNE JOBDASH — LIVE + TREND CHARTS
+   ============================================= */
 
-/* ==========================================
-   TRANSFORMATION JOBS MELBOURNE - SCRIPT V2
-   ========================================== */
-
-console.log('Dashboard loaded');
-
-// API CONFIG
-const APP_ID = '45773940';
+const APP_ID  = '45773940';
 const API_KEY = '19373b4fdefafdc7dbe4a625f0910e2d';
 
-// Multiple CORS proxy options for redundancy
-const CORS_PROXIES = [
-    'https://corsproxy.io/?',
-    'https://api.allorigins.win/raw?url=',
+const PROXIES = [
+  'https://corsproxy.io/?',
+  'https://api.allorigins.win/raw?url=',
 ];
 
-// Try multiple API queries
-const API_QUERIES = [
-    `https://api.adzuna.com/v1/api/jobs/au/search/1?app_id=${APP_ID}&app_key=${API_KEY}&results_per_page=200&what=business%20analyst&where=Melbourne&sort_by=date`,
-    `https://api.adzuna.com/v1/api/jobs/au/search/1?app_id=${APP_ID}&app_key=${API_KEY}&results_per_page=200&what=transformation&where=Melbourne&sort_by=date`,
-    `https://api.adzuna.com/v1/api/jobs/au/search/1?app_id=${APP_ID}&app_key=${API_KEY}&results_per_page=200&what=program%20manager&where=Melbourne&sort_by=date`,
+// Live job queries
+const JOB_QUERIES = [
+  { label: 'Transformation', q: 'transformation+lead' },
+  { label: 'Business Analyst', q: 'business+analyst' },
+  { label: 'Program Manager', q: 'program+manager' },
+  { label: 'Project Manager', q: 'project+manager' },
+  { label: 'Change Manager', q: 'change+manager' },
+  { label: 'ERP', q: 'ERP+consultant' },
 ];
 
-// STATE
-let allJobs = [];
+// History trend queries — these roles for the trend chart
+const TREND_ROLES = [
+  { label: 'Project Manager', q: 'project manager', color: '#58A6FF' },
+  { label: 'Program Manager', q: 'program manager', color: '#3FB950' },
+  { label: 'Business Analyst', q: 'business analyst', color: '#E3B341' },
+  { label: 'ERP',             q: 'ERP consultant',   color: '#BC8CFF' },
+  { label: 'Change Manager',  q: 'change manager',   color: '#39D0B8' },
+];
+
+let allJobs      = [];
 let filteredJobs = [];
+let activeFilter = { type: 'keyword', val: '' };
+let searchTerm   = '';
+let donutChart   = null;
+let trendChart   = null;
 
-// DOM ELEMENTS
-const jobsContainer = document.getElementById('jobsContainer');
-const searchInput = document.getElementById('searchInput');
-const filterChips = document.querySelectorAll('.filter-chip');
-const jobCount = document.getElementById('jobCount');
-const totalJobs = document.getElementById('totalJobs');
-const clearFiltersBtn = document.getElementById('clearFilters');
-const retryButton = document.getElementById('retryButton');
-const loadingState = document.getElementById('loadingState');
-const errorState = document.getElementById('errorState');
-const noResultsState = document.getElementById('noResultsState');
+// DOM
+const $ = id => document.getElementById(id);
+const jobsContainer  = $('jobsContainer');
+const searchInput    = $('searchInput');
+const jobCount       = $('jobCount');
+const loadingState   = $('loadingState');
+const errorState     = $('errorState');
+const noResultsState = $('noResultsState');
+const tableHead      = $('tableHead');
 
-// PAGE LOAD
 document.addEventListener('DOMContentLoaded', () => {
-    fetchJobs();
+  fetchJobs();
+  fetchTrends();
+  startClock();
 
-    // Search event listener
-    if (searchInput) {
-        searchInput.addEventListener('input', applyFilters);
-    }
+  searchInput?.addEventListener('input', () => {
+    searchTerm = searchInput.value.toLowerCase();
+    applyFilters();
+  });
 
-    // Filter chip event listeners
-    filterChips.forEach(chip => {
-        chip.addEventListener('click', () => {
-            chip.classList.toggle('active');
-            applyFilters();
-        });
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeFilter = { type: chip.dataset.type, val: chip.dataset.val.toLowerCase() };
+      applyFilters();
     });
+  });
 
-    // Clear filters button
-    if (clearFiltersBtn) {
-        clearFiltersBtn.addEventListener('click', clearFilters);
-    }
-
-    // Retry button
-    if (retryButton) {
-        retryButton.addEventListener('click', fetchJobs);
-    }
+  $('clearBtn')?.addEventListener('click', clearAll);
+  $('refreshBtn')?.addEventListener('click', () => { fetchJobs(); fetchTrends(); });
+  $('retryButton')?.addEventListener('click', fetchJobs);
 });
 
-// FETCH JOBS FROM API
+// CLOCK
+function startClock() {
+  const tick = () => {
+    const t = new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+    const el = $('sidebarTime');
+    if (el) el.textContent = t;
+  };
+  tick();
+  setInterval(tick, 60000);
+}
+
+// =====================
+// FETCH LIVE JOBS
+// =====================
 async function fetchJobs() {
-    showLoadingState();
+  showLoading();
+  let jobs = [];
 
-    try {
-        console.log('Fetching jobs from Adzuna API...');
-        
-        let jobs = [];
-        
-        // Try each query with different proxies
-        for (const query of API_QUERIES) {
-            for (const proxy of CORS_PROXIES) {
-                try {
-                    const url = proxy + encodeURIComponent(query);
-                    const response = await fetch(url, {
-                        headers: {
-                            'Accept': 'application/json',
-                        }
-                    });
+  for (const { q } of JOB_QUERIES) {
+    const apiUrl = `https://api.adzuna.com/v1/api/jobs/au/search/1?app_id=${APP_ID}&app_key=${API_KEY}&results_per_page=50&what=${q}&where=Melbourne&sort_by=date`;
+    for (const proxy of PROXIES) {
+      try {
+        const res = await fetch(proxy + encodeURIComponent(apiUrl), { headers: { Accept: 'application/json' } });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.results?.length) { jobs = [...jobs, ...data.results]; break; }
+        }
+      } catch(e) { continue; }
+    }
+  }
 
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.results && data.results.length > 0) {
-                            jobs = [...jobs, ...data.results];
-                            console.log(`Fetched ${data.results.length} jobs from query`);
-                            break; // Success, move to next query
-                        }
-                    }
-                } catch (e) {
-                    console.log(`Failed with proxy: ${proxy.split('/')[2]}`);
-                    continue;
-                }
+  if (!jobs.length) { showError('Unable to reach the jobs API. Please retry.'); return; }
+
+  allJobs = Array.from(new Map(jobs.map(j => [j.id, j])).values());
+  allJobs.sort((a, b) => new Date(b.created) - new Date(a.created));
+
+  updateStats();
+  buildDonut();
+  filteredJobs = [...allJobs];
+  applyFilters();
+  hideError();
+}
+
+// =====================
+// FETCH TREND HISTORY
+// =====================
+async function fetchTrends() {
+  $('trendLoading')?.classList.remove('hidden');
+  $('trendChart')?.classList.add('hidden');
+  $('trendError')?.classList.add('hidden');
+
+  const datasets = [];
+  let labels = [];
+
+  for (const role of TREND_ROLES) {
+    const apiUrl = `https://api.adzuna.com/v1/api/jobs/au/history?app_id=${APP_ID}&app_key=${API_KEY}&what=${encodeURIComponent(role.q)}&location0=Australia&location1=Victoria`;
+    let fetched = false;
+
+    for (const proxy of PROXIES) {
+      try {
+        const res = await fetch(proxy + encodeURIComponent(apiUrl), { headers: { Accept: 'application/json' } });
+        if (res.ok) {
+          const data = await res.json();
+          // Adzuna history returns { month: count } object
+          if (data && typeof data === 'object' && !data.error) {
+            const entries = Object.entries(data).sort((a,b) => a[0].localeCompare(b[0]));
+            // Keep last 12 months
+            const recent = entries.slice(-12);
+            if (labels.length === 0) {
+              labels = recent.map(([k]) => {
+                const d = new Date(k);
+                return d.toLocaleDateString('en-AU', { month: 'short', year: '2-digit' });
+              });
             }
-        }
-
-        if (jobs.length === 0) {
-            throw new Error('No jobs found from any API endpoint');
-        }
-
-        // Remove duplicates
-        allJobs = Array.from(new Map(jobs.map(job => [job.id, job])).values());
-        filteredJobs = [...allJobs];
-
-        console.log(`Total unique jobs: ${allJobs.length}`);
-
-        // Update header stats
-        if (totalJobs) {
-            totalJobs.textContent = allJobs.length;
-        }
-
-        renderJobs(filteredJobs);
-        updateTimestamp();
-        hideErrorState();
-
-    } catch (error) {
-        console.error('Fetch error:', error);
-        showErrorState('Unable to load jobs. The job API may be temporarily unavailable. Please try again in a few moments.');
-    }
-}
-
-// APPLY FILTERS
-function applyFilters() {
-    const searchTerm = (searchInput?.value || '').toLowerCase();
-
-    const activeFilters = Array.from(
-        document.querySelectorAll('.filter-chip.active')
-    ).map(btn => ({
-        type: btn.dataset.filterType,
-        value: btn.dataset.filterValue.toLowerCase()
-    }));
-
-    filteredJobs = allJobs.filter(job => {
-        // Build searchable text from job fields
-        const jobText = `
-            ${job.title || ''} 
-            ${job.description || ''} 
-            ${job.company?.display_name || ''} 
-            ${job.location?.display_name || ''}
-        `.toLowerCase();
-
-        // Check search term
-        const matchesSearch = !searchTerm || jobText.includes(searchTerm);
-
-        // Check active filters
-        let matchesFilters = true;
-        if (activeFilters.length > 0) {
-            matchesFilters = activeFilters.some(filter => {
-                switch(filter.type) {
-                    case 'keyword':
-                        return jobText.includes(filter.value) || 
-                               (filter.value === 'transformation lead' && (jobText.includes('transformation') || jobText.includes('lead'))) ||
-                               (filter.value === 'business analyst' && (jobText.includes('business') || jobText.includes('analyst') || jobText.includes('ba'))) ||
-                               (filter.value === 'program manager' && (jobText.includes('program') || jobText.includes('manager'))) ||
-                               (filter.value === 'change manager' && (jobText.includes('change') || jobText.includes('manager')));
-                    case 'salary':
-                        return job.salary_max >= parseInt(filter.value);
-                    case 'location':
-                        return jobText.includes(filter.value);
-                    case 'arrangement':
-                    case 'employment':
-                        return jobText.includes(filter.value);
-                    default:
-                        return true;
-                }
+            datasets.push({
+              label: role.label,
+              data: recent.map(([, v]) => v),
+              borderColor: role.color,
+              backgroundColor: role.color + '18',
+              borderWidth: 2,
+              pointRadius: 3,
+              pointHoverRadius: 5,
+              tension: 0.4,
+              fill: false,
             });
+            fetched = true;
+            break;
+          }
         }
-
-        return matchesSearch && matchesFilters;
-    });
-
-    renderJobs(filteredJobs);
-}
-
-// CLEAR ALL FILTERS
-function clearFilters() {
-    // Clear search
-    if (searchInput) {
-        searchInput.value = '';
+      } catch(e) { continue; }
     }
+  }
 
-    // Clear active filter chips
-    filterChips.forEach(chip => {
-        chip.classList.remove('active');
-    });
+  $('trendLoading')?.classList.add('hidden');
 
-    // Reapply filters (show all)
-    filteredJobs = [...allJobs];
-    renderJobs(filteredJobs);
+  if (!datasets.length) {
+    $('trendError')?.classList.remove('hidden');
+    return;
+  }
+
+  const canvas = $('trendChart');
+  canvas.classList.remove('hidden');
+
+  if (trendChart) trendChart.destroy();
+
+  trendChart = new Chart(canvas, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#8B949E', font: { family: 'DM Mono', size: 11 }, boxWidth: 12, padding: 16 }
+        },
+        tooltip: {
+          backgroundColor: '#1C2333',
+          borderColor: '#30363D',
+          borderWidth: 1,
+          titleColor: '#E6EDF3',
+          bodyColor: '#8B949E',
+          padding: 10,
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#484F58', font: { family: 'DM Mono', size: 10 } },
+          grid: { color: '#21262D' },
+        },
+        y: {
+          ticks: { color: '#484F58', font: { family: 'DM Mono', size: 10 } },
+          grid: { color: '#21262D' },
+          title: { display: true, text: 'Job Count', color: '#484F58', font: { size: 11 } }
+        }
+      }
+    }
+  });
 }
 
-// RENDER JOBS
+// =====================
+// DONUT CHART
+// =====================
+function buildDonut() {
+  const keywords = ['Transformation', 'Business Analyst', 'Program Manager', 'Project Manager', 'Change Manager', 'ERP'];
+  const colors   = ['#58A6FF','#3FB950','#E3B341','#BC8CFF','#39D0B8','#F78166'];
+
+  const counts = keywords.map(kw => {
+    return allJobs.filter(j => {
+      const t = `${j.title} ${j.description}`.toLowerCase();
+      return t.includes(kw.toLowerCase());
+    }).length;
+  });
+
+  const canvas = $('donutChart');
+  if (!canvas) return;
+  if (donutChart) donutChart.destroy();
+
+  donutChart = new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels: keywords,
+      datasets: [{ data: counts, backgroundColor: colors, borderColor: '#0D1117', borderWidth: 3, hoverOffset: 6 }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#8B949E', font: { family: 'DM Mono', size: 10 }, boxWidth: 10, padding: 10 }
+        },
+        tooltip: {
+          backgroundColor: '#1C2333', borderColor: '#30363D', borderWidth: 1,
+          titleColor: '#E6EDF3', bodyColor: '#8B949E', padding: 10,
+        }
+      }
+    }
+  });
+}
+
+// =====================
+// STATS
+// =====================
+function updateStats() {
+  const now = new Date();
+  $('totalJobs').textContent = allJobs.length;
+
+  const newCount = allJobs.filter(j => Math.floor((now - new Date(j.created)) / 86400000) === 0).length;
+  $('newToday').textContent = newCount;
+
+  const withSal = allJobs.filter(j => j.salary_min && j.salary_max);
+  $('avgSalary').textContent = withSal.length
+    ? `$${Math.round(withSal.reduce((s,j) => s + (j.salary_min+j.salary_max)/2, 0) / withSal.length / 1000)}K`
+    : 'N/A';
+
+  const sources = {};
+  allJobs.forEach(j => { const s = getSource(j.redirect_url); sources[s] = (sources[s]||0)+1; });
+  const top = Object.entries(sources).sort((a,b) => b[1]-a[1])[0];
+  $('topSource').textContent = top ? top[0] : '—';
+  $('lastUpdated').textContent = now.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+}
+
+// =====================
+// FILTERS & RENDER
+// =====================
+function applyFilters() {
+  filteredJobs = allJobs.filter(job => {
+    const text = `${job.title} ${job.description} ${job.company?.display_name} ${job.location?.display_name}`.toLowerCase();
+    const matchSearch = !searchTerm || text.includes(searchTerm);
+    const matchFilter = !activeFilter.val || text.includes(activeFilter.val);
+    return matchSearch && matchFilter;
+  });
+  renderJobs(filteredJobs);
+}
+
+function clearAll() {
+  searchTerm = ''; if (searchInput) searchInput.value = '';
+  activeFilter = { type: 'keyword', val: '' };
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  document.querySelector('.chip[data-val=""]')?.classList.add('active');
+  filteredJobs = [...allJobs];
+  renderJobs(filteredJobs);
+}
+
 function renderJobs(jobs) {
-    jobsContainer.innerHTML = '';
-    hideErrorState();
-    hideLoadingState();
-
-    if (!jobs.length) {
-        showNoResultsState();
-        if (jobCount) jobCount.textContent = '0 results';
-        return;
-    }
-
-    if (jobCount) {
-        const count = jobs.length;
-        jobCount.textContent = `${count} ${count === 1 ? 'job' : 'jobs'} found`;
-    }
-
-    jobs.forEach((job, index) => {
-        const card = createJobCard(job);
-        card.style.animation = `fadeIn ${200 + (index * 30)}ms ease-out forwards`;
-        card.style.opacity = '0';
-        jobsContainer.appendChild(card);
-    });
-}
-
-// CREATE JOB CARD ELEMENT
-function createJobCard(job) {
-    const card = document.createElement('div');
-    card.className = 'job-card';
-
-    // Calculate posted days
-    const postedDate = new Date(job.created);
-    const diffDays = Math.floor((new Date() - postedDate) / (1000 * 60 * 60 * 24));
-    const postedText = diffDays === 0 
-        ? 'Today' 
-        : diffDays === 1 
-        ? 'Yesterday' 
-        : `${diffDays}d ago`;
-
-    // Check if NEW (posted today)
-    const isNew = diffDays === 0;
-    const newBadge = isNew ? '<span class="badge-new">NEW</span>' : '';
-
-    // Format salary
-    const salary = job.salary_min && job.salary_max
-        ? `$${Math.round(job.salary_min / 1000)}K - $${Math.round(job.salary_max / 1000)}K`
-        : 'Not listed';
-
-    // Get source
-    const source = getSourceName(job.redirect_url);
-
-    card.innerHTML = `
-        <div class="job-card-left">
-            <h3 class="job-title">${escapeHtml(job.title)} ${newBadge}</h3>
-            <p class="job-company">${escapeHtml(job.company?.display_name || 'Company')}</p>
-        </div>
-        <div class="salary-badge">${salary}</div>
-        <div class="job-meta">
-            <span class="job-meta-item">
-                <i class="ti ti-map-pin"></i>
-                <span>${escapeHtml(job.location?.display_name || 'Melbourne')}</span>
-            </span>
-        </div>
-        <div class="posted-badge">${postedText}</div>
-        <div class="job-source">${source}</div>
-        <a href="${job.redirect_url}" target="_blank" rel="noopener noreferrer" class="apply-btn">
-            <i class="ti ti-external-link"></i>
-            View
-        </a>
-    `;
-
-    return card;
-}
-
-// GET SOURCE NAME
-function getSourceName(url) {
-    if (!url) return 'Job Board';
-
-    const u = url.toLowerCase();
-
-    if (u.includes('seek')) return 'Seek';
-    if (u.includes('linkedin')) return 'LinkedIn';
-    if (u.includes('indeed')) return 'Indeed';
-    if (u.includes('jora')) return 'Jora';
-    if (u.includes('adzuna')) return 'Adzuna';
-    if (u.includes('agencies')) return 'Agencies';
-
-    return 'Job Board';
-}
-
-// ESCAPE HTML
-function escapeHtml(text) {
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
-    return text.replace(/[&<>"']/g, m => map[m]);
-}
-
-// STATE MANAGEMENT
-function showLoadingState() {
-    loadingState.classList.remove('hidden');
-    errorState.classList.add('hidden');
-    noResultsState.classList.add('hidden');
-    jobsContainer.innerHTML = '';
-}
-
-function hideLoadingState() {
-    loadingState.classList.add('hidden');
-}
-
-function showErrorState(message) {
-    errorState.classList.remove('hidden');
-    loadingState.classList.add('hidden');
-    noResultsState.classList.add('hidden');
-    jobsContainer.innerHTML = '';
-
-    const errorMessage = document.getElementById('errorMessage');
-    if (errorMessage) {
-        errorMessage.textContent = message || 'Please check your connection and try again.';
-    }
-}
-
-function hideErrorState() {
-    errorState.classList.add('hidden');
-}
-
-function showNoResultsState() {
+  jobsContainer.innerHTML = '';
+  hideLoading(); hideError();
+  if (!jobs.length) {
     noResultsState.classList.remove('hidden');
-    loadingState.classList.add('hidden');
-    errorState.classList.add('hidden');
+    tableHead.classList.add('hidden');
+    jobCount.textContent = '0 roles found';
+    return;
+  }
+  noResultsState.classList.add('hidden');
+  tableHead.classList.remove('hidden');
+  jobCount.textContent = `${jobs.length} role${jobs.length !== 1 ? 's' : ''} found`;
+  jobs.forEach((job, i) => jobsContainer.appendChild(createCard(job, i)));
 }
 
-// UPDATE TIMESTAMP
-function updateTimestamp() {
-    const now = new Date();
-    const timeString = now.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-    });
-    
-    const lastUpdated = document.getElementById('lastUpdated');
-    if (lastUpdated) {
-        lastUpdated.textContent = `Updated at ${timeString}`;
-    }
+function createCard(job, index) {
+  const card = document.createElement('div');
+  card.className = 'job-card';
+  card.style.animationDelay = `${Math.min(index * 20, 400)}ms`;
+  const days = Math.floor((new Date() - new Date(job.created)) / 86400000);
+  const postedText = days === 0 ? 'Today' : days === 1 ? 'Yesterday' : `${days}d ago`;
+  const hasSalary = job.salary_min && job.salary_max;
+  const salary = hasSalary ? `$${Math.round(job.salary_min/1000)}K–$${Math.round(job.salary_max/1000)}K` : 'Not listed';
 
-    const footerTime = document.getElementById('footerTime');
-    if (footerTime) {
-        footerTime.textContent = timeString;
-    }
+  card.innerHTML = `
+    <div>
+      <div class="job-title-text">${esc(job.title)}${days===0?'<span class="badge-new">NEW</span>':''}</div>
+      <div class="job-company-text">${esc(job.company?.display_name||'')}</div>
+    </div>
+    <div><span class="salary-pill ${hasSalary?'':'none'}">${salary}</span></div>
+    <div><span class="posted-text ${days===0?'today':''}">${postedText}</span></div>
+    <div><span class="source-pill">${getSource(job.redirect_url)}</span></div>
+    <div><span style="font-size:12px;color:var(--text2)">${esc(job.location?.display_name||'Melbourne')}</span></div>
+    <div><a href="${job.redirect_url}" target="_blank" rel="noopener noreferrer" class="view-btn">View →</a></div>
+  `;
+  return card;
 }
+
+function getSource(url) {
+  if (!url) return 'Board';
+  const u = url.toLowerCase();
+  if (u.includes('seek')) return 'Seek';
+  if (u.includes('linkedin')) return 'LinkedIn';
+  if (u.includes('indeed')) return 'Indeed';
+  if (u.includes('jora')) return 'Jora';
+  return 'Adzuna';
+}
+
+function esc(str='') {
+  return String(str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+
+function showLoading() { loadingState.classList.remove('hidden'); errorState.classList.add('hidden'); noResultsState.classList.add('hidden'); tableHead.classList.add('hidden'); jobsContainer.innerHTML=''; jobCount.textContent='Loading…'; }
+function hideLoading() { loadingState.classList.add('hidden'); }
+function showError(msg) { errorState.classList.remove('hidden'); loadingState.classList.add('hidden'); noResultsState.classList.add('hidden'); tableHead.classList.add('hidden'); jobsContainer.innerHTML=''; const el=$('errorMessage'); if(el) el.textContent=msg; }
+function hideError() { errorState.classList.add('hidden'); }
